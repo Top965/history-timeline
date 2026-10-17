@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Era, TimelineEvent, Topic } from "@/lib/content/types";
+import type { Era, TimelineEvent } from "@/lib/content/types";
 import { formatEventYears, formatYear } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
@@ -13,7 +13,10 @@ type Props = {
   eras: Era[];
   events: TimelineEvent[];
   currentYear: number;
-  focus: Topic | null;
+  /** A topic or a lifetime: its range is banded and its events get first pick of lanes. */
+  focus: { startYear: number; endYear: number | null; eventSlugs: string[] } | null;
+  /** Context events drawn faintly behind the focus (world events on a person's or topic's timeline). */
+  muted?: ReadonlySet<string>;
   highlighted: string | null;
   onPan: (center: number) => void;
   onZoomAt: (x: number, factor: number, width: number) => void;
@@ -32,7 +35,7 @@ const pct = (x: number, width: number) => `${(x / width) * 100}%`;
  * the measured width is only used to pack labels and pick tick spacing.
  */
 export function Track(props: Props) {
-  const { locale, view, eras, events, currentYear, focus, highlighted } = props;
+  const { locale, view, eras, events, currentYear, focus, highlighted, muted } = props;
   const t = getMessages(locale).timeline;
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(FALLBACK_WIDTH);
@@ -228,7 +231,7 @@ export function Track(props: Props) {
         {ranges.map((r) => (
           <div
             key={`r${r.event.slug}`}
-            className="absolute h-[5px] rounded-[3px] bg-accent opacity-55"
+            className={`absolute h-[5px] rounded-[3px] ${muted?.has(r.event.slug) ? "bg-muted opacity-30" : "bg-accent opacity-55"}`}
             style={{ left: pct(r.left, width), width: pct(r.width, width), top: AXIS_TOP - 6 }}
             aria-hidden="true"
           />
@@ -250,7 +253,7 @@ export function Track(props: Props) {
               <button
                 key={e.slug}
                 type="button"
-                className="absolute -ms-[4.5px] size-[9px] rounded-full border-2 border-track bg-accent p-0"
+                className={`absolute -ms-[4.5px] size-[9px] rounded-full border-2 border-track p-0 ${muted?.has(e.slug) ? "bg-muted opacity-60" : "bg-accent"}`}
                 style={{ left: pct(p.x, width), top: AXIS_TOP - 4 }}
                 aria-label={label}
                 title={e.title}
@@ -260,6 +263,7 @@ export function Track(props: Props) {
           }
           const top = LANE_TOPS[p.lane];
           const isHl = e.slug === highlighted;
+          const isMuted = !isHl && !!muted?.has(e.slug);
           return (
             <button
               key={e.slug}
@@ -270,16 +274,18 @@ export function Track(props: Props) {
                 "absolute flex h-[30px] -translate-x-3 items-center gap-1.5 rounded-lg border ps-2 pe-2.5 text-xs font-medium whitespace-nowrap",
                 isHl
                   ? "pin-pulse border-accent bg-accent text-accent-ink"
-                  : e.importance === 1
-                    ? "border-accent bg-surface font-semibold hover:bg-accent-soft"
-                    : "border-line bg-surface hover:bg-accent-soft",
+                  : isMuted
+                    ? "border-dashed border-line bg-track text-muted hover:bg-surface"
+                    : e.importance === 1
+                      ? "border-accent bg-surface font-semibold hover:bg-accent-soft"
+                      : "border-line bg-surface hover:bg-accent-soft",
               ].join(" ")}
               style={{ left: pct(p.x, width), top }}
               aria-label={label}
               onClick={() => props.onOpen(e.slug)}
             >
               <span
-                className={`size-2 flex-none rounded-full ${isHl ? "bg-accent-ink" : "bg-accent"}`}
+                className={`size-2 flex-none rounded-full ${isHl ? "bg-accent-ink" : isMuted ? "bg-muted" : "bg-accent"}`}
                 aria-hidden="true"
               />
               {e.title}

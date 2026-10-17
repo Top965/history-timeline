@@ -10,11 +10,10 @@ export type Messages = {
     placeholder: string;
     go: string;
     noMatch: string;
-    types: { year: string; era: string; topic: string; event: string };
+    types: { year: string; era: string; topic: string; event: string; person: string };
   };
   readout: { hint: string; era: (name: string) => string };
   eras: { label: string; now: string };
-  focus: { kicker: string; clear: string };
   timeline: {
     label: string;
     zoomIn: string;
@@ -24,7 +23,6 @@ export type Messages = {
   };
   around: {
     heading: string;
-    inside: string;
     empty: string;
     fullStory: string;
   };
@@ -47,6 +45,32 @@ export type Messages = {
     notTranslated: string;
   };
   image: { source: string; by: string };
+  person: {
+    kicker: string;
+    born: string;
+    died: string;
+    age: (years: number) => string;
+    biography: string;
+    life: string;
+    lifeHint: string;
+    world: string;
+    showWorld: string;
+    hideWorld: string;
+    topics: string;
+    kinds: Record<"birth" | "death" | "position" | "conflict" | "team" | "award" | "event", string>;
+    now: string;
+  };
+  topic: {
+    kicker: string;
+    eventCount: (n: number) => string;
+    people: string;
+    events: string;
+    sensitive: string;
+    empty: string;
+    readMore: string;
+  };
+  credit: { fromWikipedia: string; license: string };
+  related: { people: string; topics: string };
   theme: { label: string; system: string; light: string; dark: string };
   language: { label: string };
   footer: { credits: string };
@@ -62,17 +86,16 @@ const en: Messages = {
     "Explore all of history on one zoomable timeline: drag through time, zoom from eras to single years and read the full story of any event.",
   search: {
     label: "Search history",
-    placeholder: "Search: world cup, egypt pyramids, 1969…",
+    placeholder: "Search: saddam hussein, world cup, 1969…",
     go: "Go",
     noMatch: "No match yet. Try a place, empire, war or year, like “ottoman”, “cold war” or “1969”.",
-    types: { year: "Year", era: "Era", topic: "Topic", event: "Event" },
+    types: { year: "Year", era: "Era", topic: "Topic", event: "Event", person: "Person" },
   },
   readout: {
     hint: "Drag left or right to move in time. Scroll, pinch or use + and − to zoom from eras down to single years.",
     era: (name) => `${name} era`,
   },
   eras: { label: "Jump to era", now: "now" },
-  focus: { kicker: "Focused timeline", clear: "Clear" },
   timeline: {
     label: "Timeline. Use arrow keys to move, plus and minus to zoom.",
     zoomIn: "Zoom in",
@@ -82,7 +105,6 @@ const en: Messages = {
   },
   around: {
     heading: "Around",
-    inside: "Inside",
     empty: "No events in this stretch yet. Zoom out or pick an era.",
     fullStory: "Full story",
   },
@@ -106,6 +128,41 @@ const en: Messages = {
     notTranslated: "",
   },
   image: { source: "Wikimedia Commons", by: "by" },
+  person: {
+    kicker: "Person",
+    born: "Born",
+    died: "Died",
+    age: (n) => `aged ${n}`,
+    biography: "Biography",
+    life: "Life timeline",
+    lifeHint: "Their life from birth to death. World events of the time are shown faintly.",
+    world: "In the world",
+    showWorld: "Show world events",
+    hideWorld: "Hide world events",
+    topics: "Part of",
+    kinds: {
+      birth: "Born",
+      death: "Died",
+      position: "Role",
+      conflict: "War",
+      team: "Team",
+      award: "Award",
+      event: "Took part",
+    },
+    now: "present",
+  },
+  topic: {
+    kicker: "Topic timeline",
+    eventCount: (n) => `${n} ${n === 1 ? "event" : "events"}`,
+    people: "Key people",
+    events: "Everything that happened",
+    sensitive:
+      "This topic is contested. Event names and summaries follow Wikipedia, and each event links to its source article.",
+    empty: "Events for this topic are being added.",
+    readMore: "Read more",
+  },
+  credit: { fromWikipedia: "Text from the Wikipedia article", license: "CC BY-SA 4.0" },
+  related: { people: "People", topics: "Topics" },
   theme: { label: "Theme", system: "Auto", light: "Light", dark: "Dark" },
   language: { label: "Language" },
   footer: {
@@ -132,18 +189,17 @@ const ar: Messages = {
     "استكشف التاريخ كله على خط زمني واحد: تنقّل عبر الزمن، وكبّر من العصور إلى السنوات، واقرأ القصة الكاملة لأي حدث.",
   search: {
     label: "ابحث في التاريخ",
-    placeholder: "ابحث: كأس العالم، الأهرامات، 1969…",
+    placeholder: "ابحث: صدام حسين، كأس العالم، 1969…",
     go: "اذهب",
     noMatch:
       "لا توجد نتائج بعد. جرّب مكانًا أو إمبراطورية أو حربًا أو سنة، مثل «العثمانية» أو «الحرب الباردة» أو «1969».",
-    types: { year: "سنة", era: "عصر", topic: "موضوع", event: "حدث" },
+    types: { year: "سنة", era: "عصر", topic: "موضوع", event: "حدث", person: "شخصية" },
   },
   readout: {
     hint: "اسحب يمينًا أو يسارًا للتنقل في الزمن. مرّر أو قرّب بإصبعين أو استخدم + و − للتكبير من العصور حتى السنة الواحدة.",
     era: (name) => name,
   },
   eras: { label: "انتقل إلى عصر", now: "الآن" },
-  focus: { kicker: "خط زمني مركّز", clear: "مسح" },
   timeline: {
     label: "الخط الزمني. استخدم مفاتيح الأسهم للتنقل، وزائد وناقص للتكبير.",
     zoomIn: "تكبير",
@@ -153,7 +209,6 @@ const ar: Messages = {
   },
   around: {
     heading: "حول عام",
-    inside: "داخل",
     empty: "لا توجد أحداث في هذه الفترة بعد. صغّر العرض أو اختر عصرًا.",
     fullStory: "قصة كاملة",
   },
@@ -176,6 +231,40 @@ const ar: Messages = {
     notTranslated: "هذا المحتوى غير متوفر بالعربية بعد، ويُعرض بالإنجليزية.",
   },
   image: { source: "ويكيميديا كومنز", by: "تصوير" },
+  person: {
+    kicker: "شخصية",
+    born: "الولادة",
+    died: "الوفاة",
+    age: (n) => `عن عمر ${n} سنة`,
+    biography: "السيرة",
+    life: "الخط الزمني لحياته",
+    lifeHint: "حياته من الولادة حتى الوفاة. تظهر أحداث العالم في ذلك الوقت بلون خافت.",
+    world: "في العالم",
+    showWorld: "اعرض أحداث العالم",
+    hideWorld: "أخفِ أحداث العالم",
+    topics: "ضمن",
+    kinds: {
+      birth: "الولادة",
+      death: "الوفاة",
+      position: "منصب",
+      conflict: "حرب",
+      team: "فريق",
+      award: "جائزة",
+      event: "شارك في",
+    },
+    now: "حتى الآن",
+  },
+  topic: {
+    kicker: "خط زمني لموضوع",
+    eventCount: (n) => (n === 1 ? "حدث واحد" : n === 2 ? "حدثان" : `${n} ${n >= 3 && n <= 10 ? "أحداث" : "حدثًا"}`),
+    people: "شخصيات رئيسية",
+    events: "كل ما حدث",
+    sensitive: "هذا موضوع خلافي. أسماء الأحداث وملخصاتها مأخوذة من ويكيبيديا، وكل حدث مرتبط بمقالته المصدر.",
+    empty: "نعمل على إضافة أحداث هذا الموضوع.",
+    readMore: "اقرأ المزيد",
+  },
+  credit: { fromWikipedia: "النص من مقالة ويكيبيديا", license: "CC BY-SA 4.0" },
+  related: { people: "شخصيات", topics: "مواضيع" },
   theme: { label: "المظهر", system: "تلقائي", light: "فاتح", dark: "داكن" },
   language: { label: "اللغة" },
   footer: {

@@ -1,0 +1,223 @@
+import Link from "next/link";
+import type { LifeItem, PersonPage, TimelineData, TimelineEvent } from "@/lib/content/types";
+import { formatDate, formatEventYears, formatRange, formatYear, lifeYears } from "@/lib/format/years";
+import type { Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
+import { CommonsFigure } from "@/components/story/CommonsFigure";
+import { FocusTimeline } from "@/components/timeline/FocusTimeline";
+import { WikipediaCredit } from "@/components/ui/WikipediaCredit";
+
+const H2 = "m-0 mt-2 font-display text-2xl font-medium";
+const LIFE_IMPORTANCE: Record<LifeItem["kind"], 1 | 2 | 3> = {
+  birth: 1,
+  death: 1,
+  position: 1,
+  conflict: 1,
+  event: 2,
+  team: 2,
+  award: 3,
+};
+
+/** Life items that are not events on the site get a slug with a colon, which FocusTimeline never opens. */
+const LIFE_SLUG_PREFIX = "life:";
+
+/** Life items as timeline pins: offices and teams become ranges, wars link to their event page. */
+function lifePins(life: LifeItem[], locale: Locale): TimelineEvent[] {
+  return life.map((l, i) => ({
+    slug: l.eventSlug ?? `${LIFE_SLUG_PREFIX}${i}`,
+    title: l.label,
+    place: "",
+    startYear: l.startYear,
+    endYear: l.endYear,
+    isApproximate: l.isApproximate,
+    importance: LIFE_IMPORTANCE[l.kind],
+    hasFullStory: false,
+    textLocale: l.labelLocale ?? locale,
+    keywords: [],
+  }));
+}
+
+function when(l: LifeItem, locale: Locale): string {
+  if ((l.kind === "birth" || l.kind === "death") && l.startDate) return formatDate(l.startDate, locale);
+  return formatEventYears(l, locale);
+}
+
+export function PersonView({ locale, page, data }: { locale: Locale; page: PersonPage; data: TimelineData }) {
+  const t = getMessages(locale);
+  const { person } = page;
+  const lang = person.textLocale;
+  const end = person.deathYear ?? data.currentYear;
+  const age =
+    person.deathYear != null
+      ? person.deathYear - person.birthYear - (person.birthYear < 0 && person.deathYear > 0 ? 1 : 0)
+      : null;
+  const context = data.events.filter(
+    (e) => e.importance === 1 && e.startYear >= person.birthYear && e.startYear <= end,
+  );
+
+  // The life list, with the biggest world events of the time between its rows.
+  type Row = { type: "life"; item: LifeItem } | { type: "world"; item: PersonPage["world"][number] };
+  const rows: Row[] = [
+    ...page.life.map((item): Row => ({ type: "life", item })),
+    ...page.world.map((item): Row => ({ type: "world", item })),
+  ].sort((a, b) => a.item.startYear - b.item.startYear || (a.type === "life" ? -1 : 1));
+
+  return (
+    <article
+      className="gutter mx-auto grid max-w-[760px] grid-cols-[minmax(0,1fr)] gap-[22px] pt-6 pb-[60px]"
+      aria-labelledby="person-name"
+    >
+      <header className="grid gap-4 sm:grid-cols-[200px_1fr] sm:items-start">
+        {person.image ? (
+          <div className="max-w-[240px]">
+            <CommonsFigure
+              locale={locale}
+              kind="photo"
+              caption={person.name}
+              captionLocale={lang}
+              image={person.image}
+              priority
+              sizes="240px"
+            />
+          </div>
+        ) : null}
+        <div className={person.image ? "" : "sm:col-span-2"}>
+          <div className="text-xs font-semibold tracking-[.08em] text-accent uppercase">{t.person.kicker}</div>
+          <h1
+            id="person-name"
+            lang={lang}
+            dir="auto"
+            className="m-0 mt-1.5 mb-2 font-display text-[clamp(34px,8vw,52px)] leading-[1.04] font-bold text-balance"
+          >
+            {person.name}
+          </h1>
+          <p className="m-0 font-mono text-sm text-muted">
+            {lifeYears(person, locale)}
+            {age != null && age > 0 ? ` · ${t.person.age(age)}` : ""}
+          </p>
+          {person.description && (
+            <p className="m-0 mt-2 text-lg text-muted" lang={lang} dir="auto">
+              {person.description}
+            </p>
+          )}
+          <dl className="m-0 mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+            <dt className="text-muted">{t.person.born}</dt>
+            <dd className="m-0" dir="auto">
+              {person.birthDate ? formatDate(person.birthDate, locale) : formatYear(person.birthYear, locale)}
+              {person.birthPlace ? ` · ${person.birthPlace}` : ""}
+            </dd>
+            {person.deathYear != null && (
+              <>
+                <dt className="text-muted">{t.person.died}</dt>
+                <dd className="m-0" dir="auto">
+                  {person.deathDate ? formatDate(person.deathDate, locale) : formatYear(person.deathYear, locale)}
+                  {person.deathPlace ? ` · ${person.deathPlace}` : ""}
+                </dd>
+              </>
+            )}
+          </dl>
+          {page.topics.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted">{t.person.topics}</span>
+              {page.topics.map((tp) => (
+                <Link
+                  key={tp.slug}
+                  href={`/${locale}/topics/${tp.slug}`}
+                  className="chip text-ink no-underline hover:border-accent"
+                >
+                  <span dir="auto">{tp.name}</span>
+                  <span className="chip-range">{formatRange(tp, locale)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <section aria-labelledby="life-heading" className="grid gap-2.5">
+        <h2 id="life-heading" className={H2}>
+          {t.person.life}
+        </h2>
+        <p className="m-0 text-sm text-muted">{t.person.lifeHint}</p>
+        <FocusTimeline
+          locale={locale}
+          eras={data.eras}
+          currentYear={data.currentYear}
+          startYear={person.birthYear}
+          endYear={person.deathYear}
+          events={lifePins(page.life, locale)}
+          context={context}
+        />
+        <ol className="m-0 grid list-none gap-1.5 p-0" data-testid="life-list">
+          {rows.map((r, i) =>
+            r.type === "life" ? (
+              <li
+                key={`l${i}`}
+                className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 rounded-lg border border-line bg-surface px-3 py-2"
+              >
+                <span className="font-mono text-xs text-muted tabular-nums">{when(r.item, locale)}</span>
+                <span className="min-w-0">
+                  <span className="me-2 text-[10px] font-semibold tracking-[.07em] text-accent-strong uppercase">
+                    {t.person.kinds[r.item.kind]}
+                  </span>
+                  {r.item.eventSlug ? (
+                    <Link
+                      href={`/${locale}/events/${r.item.eventSlug}`}
+                      className="font-semibold text-ink"
+                      lang={r.item.labelLocale}
+                      dir="auto"
+                    >
+                      {r.item.label}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold" lang={r.item.labelLocale} dir="auto">
+                      {r.item.label}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ) : (
+              <li
+                key={`w${r.item.slug}`}
+                className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 px-3 py-1 opacity-70"
+              >
+                <span className="font-mono text-xs text-muted tabular-nums">{formatEventYears(r.item, locale)}</span>
+                <span className="min-w-0 text-sm text-muted">
+                  <span className="me-2 text-[10px] font-semibold tracking-[.07em] uppercase">{t.person.world}</span>
+                  <Link
+                    href={`/${locale}/events/${r.item.slug}`}
+                    className="text-muted"
+                    lang={r.item.textLocale}
+                    dir="auto"
+                  >
+                    {r.item.title}
+                  </Link>
+                </span>
+              </li>
+            ),
+          )}
+        </ol>
+      </section>
+
+      {person.biography && (
+        <section aria-labelledby="bio-heading" className="grid gap-3">
+          <h2 id="bio-heading" className={H2}>
+            {t.person.biography}
+          </h2>
+          <div
+            className="grid max-w-[65ch] gap-3 text-[17px] leading-relaxed"
+            lang={page.source ? undefined : lang}
+            dir="auto"
+          >
+            {person.biography.split(/\n+/).map((para, i) => (
+              <p key={i} className="m-0">
+                {para}
+              </p>
+            ))}
+          </div>
+          <WikipediaCredit locale={locale} source={page.source} />
+        </section>
+      )}
+    </article>
+  );
+}

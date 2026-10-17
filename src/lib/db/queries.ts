@@ -5,11 +5,18 @@ import type {
   Era,
   EventLink,
   EventPage,
+  LifeEventKind,
+  PersonCard,
+  PersonPage,
+  PersonSummary,
   Story,
   StoryChapter,
+  TextSource,
   TimelineData,
   TimelineEvent,
   Topic,
+  TopicLink,
+  TopicPage,
 } from "@/lib/content/types";
 import { CONTENT_SOURCE_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
 import { publicRead, type Tx } from "./client";
@@ -18,6 +25,8 @@ import { publicRead, type Tx } from "./client";
 export const CACHE_TAGS = {
   timeline: "timeline",
   event: (slug: string) => `event:${slug}`,
+  person: (slug: string) => `person:${slug}`,
+  topic: (slug: string) => `topic:${slug}`,
 } as const;
 
 const SRC = CONTENT_SOURCE_LOCALE;
@@ -56,12 +65,23 @@ type EventRow = {
 type TopicRow = {
   slug: string;
   name: string;
-  summary: string;
+  summary: string | null;
   summary_locale: string;
   start_year: number;
   end_year: number | null;
   is_approximate: boolean;
   event_slugs: string[];
+  keywords: string[];
+};
+
+type PersonRow = {
+  slug: string;
+  name: string;
+  description: string | null;
+  birth_year: number;
+  death_year: number | null;
+  is_approximate: boolean;
+  text_locale: string;
   keywords: string[];
 };
 
@@ -103,7 +123,29 @@ async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, 
     where t.status = 'published'
     order by t.start_year, t.slug`;
 
+  const people = await tx<PersonRow[]>`
+    select p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
+      p.birth_year, p.death_year, p.is_approximate,
+      case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
+      (select coalesce(array_agg(distinct k), '{}') from public.person_translations t, unnest(t.keywords || t.name) k
+        where t.person_id = p.id) as keywords
+    from public.people p
+    join public.person_translations d on d.person_id = p.id and d.locale = ${SRC}
+    left join public.person_translations l on l.person_id = p.id and l.locale = ${locale}
+    where p.status = 'published'
+    order by p.sitelinks desc nulls last, p.slug`;
+
   return {
+    people: people.map((r): PersonSummary => ({
+      slug: r.slug,
+      name: r.name,
+      description: r.description,
+      birthYear: r.birth_year,
+      deathYear: r.death_year,
+      isApproximate: r.is_approximate,
+      textLocale: asLocale(r.text_locale),
+      keywords: r.keywords,
+    })),
     eras: eras.map((r): Era => ({
       slug: r.slug,
       name: r.name,
@@ -127,7 +169,7 @@ async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, 
     topics: topics.map((r): Topic => ({
       slug: r.slug,
       name: r.name,
-      summary: r.summary,
+      summary: r.summary ?? "",
       summaryLocale: asLocale(r.summary_locale),
       startYear: r.start_year,
       endYear: r.end_year,
@@ -264,6 +306,26 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
 
   const story = await loadStory(tx, ev.id, locale);
 
+  const [source] = await tx<SourceRow[]>`
+    select s.url, s.title, s.license
+    from public.event_translations t join public.sources s on s.id = t.source_id
+    where t.event_id = ${ev.id} and t.locale = ${ev.text_locale}`;
+  const topics = await tx<TopicLinkRow[]>`
+    select t.slug, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
+    from public.topic_events te
+    join public.topics t on t.id = te.topic_id
+    join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
+    left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
+    where te.event_id = ${ev.id} and t.status = 'published'
+    order by t.start_year`;
+  const people = await loadPersonCards(
+    tx,
+    locale,
+    tx`p.id in (select pe.person_id from public.person_events pe where pe.event_id = ${ev.id})`,
+    tx`p.sitelinks desc nulls last`,
+    8,
+  );
+
   return {
     event: {
       slug: ev.slug,
@@ -282,6 +344,9 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
     era: era ?? null,
     hero: hero ? toImage(hero, ev.media_hint ?? ev.title) : null,
     story,
+    source: source ? toSource(source) : null,
+    topics: topics.map(toTopicLink),
+    people,
     previous: previous ? toLink(previous) : null,
     next: next ? toLink(next) : null,
   };
@@ -382,14 +447,314 @@ export async function getEventPage(locale: Locale, slug: string): Promise<EventP
 }
 
 /** Slugs of all published events, for static generation and the sitemap. */
-export async function getPublishedEventSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
+export async function getPublishedEventSlugs(): Promise<{ slug: string; updatedAt: string; importance: 1 | 2 | 3 }[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(CACHE_TAGS.timeline);
   const rows = await publicRead(
     "event.slugs",
-    (tx) => tx<{ slug: string; updated_at: Date }[]>`
-    select slug, updated_at from public.events where status = 'published' order by start_year, slug`,
+    (tx) => tx<{ slug: string; updated_at: Date; importance: number }[]>`
+    select slug, updated_at, importance from public.events where status = 'published' order by start_year, slug`,
   );
-  return rows.map((r) => ({ slug: r.slug, updatedAt: r.updated_at.toISOString() }));
+  return rows.map((r) => ({
+    slug: r.slug,
+    updatedAt: r.updated_at.toISOString(),
+    importance: asImportance(r.importance),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Shared pieces for people and topics
+// ---------------------------------------------------------------------------
+
+type SourceRow = { url: string; title: string; license: string | null };
+const toSource = (r: SourceRow): TextSource => ({ url: r.url, title: r.title, license: r.license });
+
+type TopicLinkRow = {
+  slug: string;
+  name: string;
+  start_year: number;
+  end_year: number | null;
+  is_approximate: boolean;
+};
+const toTopicLink = (r: TopicLinkRow): TopicLink => ({
+  slug: r.slug,
+  name: r.name,
+  startYear: r.start_year,
+  endYear: r.end_year,
+  isApproximate: r.is_approximate,
+});
+
+type PersonCardRow = Partial<ImageRow> & {
+  slug: string;
+  name: string;
+  description: string | null;
+  birth_year: number;
+  death_year: number | null;
+  is_approximate: boolean;
+  text_locale: string;
+  has_image: boolean;
+};
+
+const toPersonCard = (r: PersonCardRow): PersonCard => ({
+  slug: r.slug,
+  name: r.name,
+  description: r.description,
+  birthYear: r.birth_year,
+  deathYear: r.death_year,
+  isApproximate: r.is_approximate,
+  textLocale: asLocale(r.text_locale),
+  image: r.has_image ? toImage(r as ImageRow, r.name) : null,
+});
+
+/** Published people matching `where` (a fragment on alias p), with their photo. */
+async function loadPersonCards(
+  tx: Tx,
+  locale: Locale,
+  where: ReturnType<Tx>,
+  orderBy: ReturnType<Tx>,
+  limit: number,
+): Promise<PersonCard[]> {
+  const rows = await tx<PersonCardRow[]>`
+    select p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
+      p.birth_year, p.death_year, p.is_approximate,
+      case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
+      (i.id is not null) as has_image, ${imageColumns(tx, locale)}
+    from public.people p
+    join public.person_translations d on d.person_id = p.id and d.locale = ${SRC}
+    left join public.person_translations l on l.person_id = p.id and l.locale = ${locale}
+    left join public.images i on i.id = p.image_id
+    where p.status = 'published' and ${where}
+    order by ${orderBy}
+    limit ${limit}`;
+  return rows.map(toPersonCard);
+}
+
+// ---------------------------------------------------------------------------
+// Person page
+// ---------------------------------------------------------------------------
+
+async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<PersonPage | null> {
+  const [p] = await tx<
+    (PersonCardRow & {
+      id: string;
+      biography: string | null;
+      birth_date: Date | null;
+      death_date: Date | null;
+      birth_place: string | null;
+      death_place: string | null;
+      bio_locale: string;
+    })[]
+  >`
+    select p.id, p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
+      p.birth_year, p.death_year, p.birth_date, p.death_date, p.is_approximate,
+      case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
+      coalesce(l.biography, d.biography) as biography,
+      case when l.biography is null then ${SRC} else ${locale} end as bio_locale,
+      coalesce(l.birth_place, d.birth_place) as birth_place, coalesce(l.death_place, d.death_place) as death_place,
+      (i.id is not null) as has_image, ${imageColumns(tx, locale)}
+    from public.people p
+    join public.person_translations d on d.person_id = p.id and d.locale = ${SRC}
+    left join public.person_translations l on l.person_id = p.id and l.locale = ${locale}
+    left join public.images i on i.id = p.image_id
+    where p.slug = ${slug} and p.status = 'published'`;
+  if (!p) return null;
+
+  const [source] = await tx<SourceRow[]>`
+    select s.url, s.title, s.license
+    from public.person_translations t join public.sources s on s.id = t.source_id
+    where t.person_id = ${p.id} and t.locale = ${p.bio_locale}`;
+
+  const life = await tx<
+    {
+      kind: LifeEventKind;
+      start_year: number;
+      end_year: number | null;
+      start_date: Date | null;
+      end_date: Date | null;
+      is_approximate: boolean;
+      label: string;
+      label_locale: string;
+      event_slug: string | null;
+    }[]
+  >`
+    select pe.kind, pe.start_year, pe.end_year, pe.start_date, pe.end_date, pe.is_approximate,
+      coalesce(l.label, d.label) as label, case when l.label is null then ${SRC} else ${locale} end as label_locale,
+      e.slug as event_slug
+    from public.person_events pe
+    join public.person_event_translations d on d.person_event_id = pe.id and d.locale = ${SRC}
+    left join public.person_event_translations l on l.person_event_id = pe.id and l.locale = ${locale}
+    left join public.events e on e.id = pe.event_id and e.status = 'published'
+    where pe.person_id = ${p.id}
+    order by pe.start_year, (pe.kind = 'birth') desc, (pe.kind = 'death'), pe.start_date nulls last, label`;
+
+  const end = p.death_year ?? new Date().getUTCFullYear();
+  const world = await tx<(LinkRow & { importance: number; text_locale: string })[]>`
+    select e.slug, coalesce(l.title, d.title) as title, e.start_year, e.end_year, e.is_approximate, e.importance,
+      case when l.event_id is null then ${SRC} else ${locale} end as text_locale
+    from public.events e
+    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+    where e.status = 'published' and e.importance = 1
+      and e.start_year >= ${p.birth_year} and e.start_year <= ${end}
+    order by e.start_year, e.slug
+    limit 40`;
+
+  const topics = await tx<TopicLinkRow[]>`
+    select t.slug, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
+    from public.topic_people tp
+    join public.topics t on t.id = tp.topic_id
+    join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
+    left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
+    where tp.person_id = ${p.id} and t.status = 'published'
+    order by t.start_year`;
+
+  return {
+    person: {
+      ...toPersonCard(p),
+      biography: p.biography,
+      birthDate: isoDate(p.birth_date),
+      deathDate: isoDate(p.death_date),
+      birthPlace: p.birth_place,
+      deathPlace: p.death_place,
+    },
+    source: source ? toSource(source) : null,
+    life: life.map((r) => ({
+      kind: r.kind,
+      startYear: r.start_year,
+      endYear: r.end_year,
+      startDate: isoDate(r.start_date),
+      endDate: isoDate(r.end_date),
+      isApproximate: r.is_approximate,
+      label: r.label,
+      labelLocale: asLocale(r.label_locale),
+      eventSlug: r.event_slug,
+    })),
+    world: world.map((r) => ({
+      ...toLink(r),
+      importance: asImportance(r.importance),
+      textLocale: asLocale(r.text_locale),
+    })),
+    topics: topics.map(toTopicLink),
+  };
+}
+
+export async function getPersonPage(locale: Locale, slug: string): Promise<PersonPage | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.person(slug));
+  return publicRead("person.load", (tx) => loadPersonPage(tx, locale, slug), { locale, slug });
+}
+
+// ---------------------------------------------------------------------------
+// Topic page
+// ---------------------------------------------------------------------------
+
+async function loadTopicPage(tx: Tx, locale: Locale, slug: string): Promise<TopicPage | null> {
+  const [t] = await tx<(TopicRow & { id: string; is_sensitive: boolean })[]>`
+    select t.id, t.slug, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
+      case when l.summary is null then ${SRC} else ${locale} end as summary_locale,
+      t.start_year, t.end_year, t.is_approximate, t.is_sensitive,
+      coalesce((select array_agg(e.slug order by te.sort_order)
+        from public.topic_events te join public.events e on e.id = te.event_id
+        where te.topic_id = t.id and e.status = 'published'), '{}') as event_slugs,
+      '{}'::text[] as keywords
+    from public.topics t
+    join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
+    left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
+    where t.slug = ${slug} and t.status = 'published'`;
+  if (!t) return null;
+
+  const [source] = await tx<SourceRow[]>`
+    select s.url, s.title, s.license
+    from public.topic_translations tt join public.sources s on s.id = tt.source_id
+    where tt.topic_id = ${t.id} and tt.locale = ${t.summary_locale}`;
+
+  const events = await tx<
+    (LinkRow & { summary: string; place: string; importance: number; text_locale: string; has_full_story: boolean })[]
+  >`
+    select e.slug, coalesce(l.title, d.title) as title, coalesce(l.summary, d.summary) as summary,
+      coalesce(l.place_label, d.place_label) as place, e.start_year, e.end_year, e.is_approximate, e.importance,
+      case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
+      exists (select 1 from public.stories s where s.event_id = e.id and s.layout = 'full') as has_full_story
+    from public.topic_events te
+    join public.events e on e.id = te.event_id
+    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+    where te.topic_id = ${t.id} and e.status = 'published'
+    order by e.start_year, e.importance, e.slug`;
+
+  const people = await loadPersonCards(
+    tx,
+    locale,
+    tx`p.id in (select tp.person_id from public.topic_people tp where tp.topic_id = ${t.id})`,
+    tx`(select tp.sort_order from public.topic_people tp where tp.topic_id = ${t.id} and tp.person_id = p.id)`,
+    24,
+  );
+
+  return {
+    topic: {
+      slug: t.slug,
+      name: t.name,
+      summary: t.summary ?? "",
+      summaryLocale: asLocale(t.summary_locale),
+      startYear: t.start_year,
+      endYear: t.end_year,
+      isApproximate: t.is_approximate,
+      eventSlugs: t.event_slugs,
+      keywords: [],
+      isSensitive: t.is_sensitive,
+    },
+    source: source ? toSource(source) : null,
+    events: events.map((r) => ({
+      ...toLink(r),
+      summary: r.summary,
+      place: r.place,
+      importance: asImportance(r.importance),
+      textLocale: asLocale(r.text_locale),
+      hasFullStory: r.has_full_story,
+    })),
+    people,
+  };
+}
+
+export async function getTopicPage(locale: Locale, slug: string): Promise<TopicPage | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.topic(slug));
+  return publicRead("topic.load", (tx) => loadTopicPage(tx, locale, slug), { locale, slug });
+}
+
+// ---------------------------------------------------------------------------
+// Slugs for static generation and the sitemap
+// ---------------------------------------------------------------------------
+
+type SlugRow = { slug: string; updated_at: Date };
+const toSlugs = (rows: SlugRow[]) => rows.map((r) => ({ slug: r.slug, updatedAt: r.updated_at.toISOString() }));
+
+/** Published people, most covered first. */
+export async function getPublishedPeopleSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline);
+  return toSlugs(
+    await publicRead(
+      "person.slugs",
+      (tx) => tx<SlugRow[]>`
+      select slug, updated_at from public.people where status = 'published' order by sitelinks desc nulls last, slug`,
+    ),
+  );
+}
+
+export async function getPublishedTopicSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline);
+  return toSlugs(
+    await publicRead(
+      "topic.slugs",
+      (tx) =>
+        tx<SlugRow[]>`select slug, updated_at from public.topics where status = 'published' order by start_year, slug`,
+    ),
+  );
 }

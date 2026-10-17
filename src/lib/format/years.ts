@@ -53,3 +53,13 @@ export function formatDate(isoDate: string, locale: Locale): string {
 export function formatDateRange(start: string, end: string | null, locale: Locale): string {
   return end ? `${formatDate(start, locale)} – ${formatDate(end, locale)}` : formatDate(start, locale);
 }
+
+/** "1937 – 2006", or "b. 1987" for the living. */
+export function lifeYears(
+  p: { birthYear: number; deathYear: number | null; isApproximate?: boolean },
+  locale: Locale,
+): string {
+  const birth = (p.isApproximate ? APPROX[locale] : "") + formatYear(p.birthYear, locale);
+  if (p.deathYear == null) return locale === "ar" ? `وُلد ${birth}` : `b. ${birth}`;
+  return `${birth} – ${formatYear(p.deathYear, locale)}`;
+}

@@ -70,20 +70,19 @@ test.describe("timeline", () => {
     await expect(readout(page)).toHaveText("975 CE");
   });
 
-  test("searches a topic and focuses its range", async ({ page }) => {
+  test("searches a topic and opens its own timeline", async ({ page }) => {
     await page.goto("/en");
     await search(page, "egypt pyramids");
     const first = page.getByRole("option").first();
     await expect(first).toContainText("Topic");
     await expect(first).toContainText("Ancient Egypt");
     await page.keyboard.press("Enter");
-    const card = page.getByTestId("focus-card");
-    await expect(card).toContainText("Ancient Egypt");
-    await expect(card).toContainText("c. 3,100 BCE – 30 BCE");
-    await expect(page.getByRole("heading", { name: "Inside Ancient Egypt" })).toBeVisible();
-    await expect(page.getByTestId("around-list")).toContainText("Great Pyramid of Giza");
-    await card.getByRole("button", { name: "Clear" }).click();
-    await expect(card).toBeHidden();
+    await expect(page).toHaveURL(/\/en\/topics\/ancient-egypt$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Ancient Egypt" })).toBeVisible();
+    await expect(page.getByText("c. 3,100 BCE – 30 BCE").filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByTestId("topic-events")).toContainText("Great Pyramid of Giza");
+    // The home page stays mounted (hidden) after navigating, so pick the visible timeline.
+    await expect(page.getByTestId("timeline").filter({ visible: true })).toBeVisible();
   });
 
   test("searches years with BC and typos", async ({ page }) => {
@@ -117,7 +116,14 @@ test.describe("timeline", () => {
     expect(results.violations.filter((v) => v.impact === "critical" || v.impact === "serious")).toEqual([]);
   });
 
-  for (const path of ["/en", "/ar", "/en/events/world-war-i", "/ar/events/great-pyramid-of-giza"]) {
+  for (const path of [
+    "/en",
+    "/ar",
+    "/en/events/world-war-i",
+    "/ar/events/great-pyramid-of-giza",
+    "/en/topics/israeli-palestinian-conflict",
+    "/ar/topics/fifa-world-cup",
+  ]) {
     test(`${path} fits the screen without sideways scrolling`, async ({ page }) => {
       await page.goto(path);
       const overflow = await page.evaluate(
@@ -165,6 +171,13 @@ test.describe("story pages", () => {
 
   test("full story page has no serious accessibility problems", async ({ page }) => {
     await page.goto("/en/events/world-war-i");
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(results.violations.filter((v) => v.impact === "critical" || v.impact === "serious")).toEqual([]);
+  });
+
+  test("topic page has no serious accessibility problems", async ({ page }) => {
+    await page.goto("/ar/topics/israeli-palestinian-conflict");
+    await expect(page.getByRole("note")).toBeVisible();
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(results.violations.filter((v) => v.impact === "critical" || v.impact === "serious")).toEqual([]);
   });

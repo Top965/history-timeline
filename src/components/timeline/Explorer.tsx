@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TimelineData, Topic } from "@/lib/content/types";
-import { formatEventYears, formatRange, formatYear, formatYearShort } from "@/lib/format/years";
+import type { TimelineData } from "@/lib/content/types";
+import { formatEventYears, formatYear, formatYearShort } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import type { SearchResult } from "@/lib/search/search";
@@ -16,7 +16,6 @@ import {
   fitRange,
   interpolateView,
   viewForEvent,
-  viewForRange,
   zoomAt,
   type View,
 } from "@/lib/timeline/geometry";
@@ -36,7 +35,6 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
   const router = useRouter();
   const { currentYear } = data;
   const [view, setViewState] = useState<View>(INITIAL_VIEW);
-  const [focus, setFocus] = useState<Topic | null>(null);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const viewRef = useRef(view);
   const animRef = useRef(0);
@@ -79,7 +77,6 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
   useEffect(() => {
     // Subscribe first so an animated request from a story page wins over the hash it also set.
     const unsubscribe = subscribeTimelineJump(({ instant, ...v }) => {
-      setFocus(null);
       setHighlighted(null);
       if (instant) setView(v);
       else flyTo(v);
@@ -97,30 +94,21 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
 
   const year = Math.round(view.center);
   const era = eraAt(data.eras, year);
-  const bySlug = useMemo(() => new Map(data.events.map((e) => [e.slug, e])), [data.events]);
-  const around = focus
-    ? focus.eventSlugs
-        .map((s) => bySlug.get(s))
-        .filter((e) => e != null)
-        .sort((a, b) => a.startYear - b.startYear)
-    : eventsAround(data.events, view);
+  const around = useMemo(() => eventsAround(data.events, view), [data.events, view]);
 
   const openEvent = (slug: string) => router.push(`/${locale}/events/${slug}`);
 
   function choose(r: SearchResult) {
     setHighlighted(null);
+    // Topics and people have their own timelines.
+    if (r.type === "topic") return router.push(`/${locale}/topics/${r.topic.slug}`);
+    if (r.type === "person") return router.push(`/${locale}/people/${r.person.slug}`);
     if (r.type === "year") {
-      setFocus(null);
       flyTo({ center: r.year, span: 40 });
     } else if (r.type === "era") {
-      setFocus(null);
       const end = r.era.endYear ?? currentYear;
       flyTo(fitRange(r.era.startYear, Math.min(end, currentYear)));
-    } else if (r.type === "topic") {
-      setFocus(r.topic);
-      flyTo(viewForRange(r.topic.startYear, r.topic.endYear ?? currentYear));
     } else {
-      setFocus(null);
       setHighlighted(r.event.slug);
       flyTo(viewForEvent(r.event));
     }
@@ -169,7 +157,6 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
               aria-pressed={pressed}
               className={`chip ${pressed ? "border-ink bg-ink text-bg" : ""}`}
               onClick={() => {
-                setFocus(null);
                 setHighlighted(null);
                 flyTo(fitRange(e.startYear, Math.min(e.endYear ?? currentYear, currentYear)));
               }}
@@ -183,35 +170,6 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
         })}
       </nav>
 
-      {focus && (
-        <section
-          className="grid grid-cols-[1fr_auto] items-start gap-x-3.5 gap-y-1 rounded-xl border border-accent bg-accent-soft px-4 py-3.5"
-          aria-labelledby="focus-title"
-          data-testid="focus-card"
-        >
-          <div className="text-[11px] font-semibold tracking-[.08em] text-accent-strong uppercase">
-            {t.focus.kicker}
-          </div>
-          <button
-            type="button"
-            className="btn col-start-2 row-span-2 row-start-1"
-            onClick={() => {
-              setFocus(null);
-              setHighlighted(null);
-            }}
-          >
-            {t.focus.clear}
-          </button>
-          <h2 id="focus-title" className="col-start-1 m-0 font-display text-2xl leading-tight">
-            {focus.name}
-            <small className="ms-2 font-mono text-[13px] font-normal text-muted">{formatRange(focus, locale)}</small>
-          </h2>
-          <p className="col-span-2 m-0 mt-0.5 max-w-[65ch] text-sm" lang={focus.summaryLocale} dir="auto">
-            {focus.summary}
-          </p>
-        </section>
-      )}
-
       <div ref={instrumentRef}>
         <Track
           locale={locale}
@@ -219,7 +177,7 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
           eras={data.eras}
           events={data.events}
           currentYear={currentYear}
-          focus={focus}
+          focus={null}
           highlighted={highlighted}
           onInteractStart={stopAnimation}
           onPan={(center) => setView({ center, span: viewRef.current.span })}
@@ -232,15 +190,7 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
 
       <section aria-labelledby="around-heading">
         <h2 id="around-heading" className="m-0 mb-2.5 font-display text-[22px] font-medium">
-          {focus ? (
-            <>
-              {t.around.inside} <span className="font-display">{focus.name}</span>
-            </>
-          ) : (
-            <>
-              {t.around.heading} <span className="font-mono text-lg">{formatYear(year, locale)}</span>
-            </>
-          )}
+          {t.around.heading} <span className="font-mono text-lg">{formatYear(year, locale)}</span>
         </h2>
         {around.length ? (
           <ul

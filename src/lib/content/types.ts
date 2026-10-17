@@ -37,11 +37,91 @@ export type Topic = {
   keywords: string[];
 };
 
+/** A person as the timeline and search know them; the full page is PersonPage. */
+export type PersonSummary = {
+  slug: string;
+  name: string;
+  description: string | null;
+  birthYear: number;
+  deathYear: number | null;
+  isApproximate: boolean;
+  textLocale: Locale;
+  keywords: string[];
+};
+
 export type TimelineData = {
   currentYear: number;
   eras: Era[];
   events: TimelineEvent[];
   topics: Topic[];
+  people: PersonSummary[];
+};
+
+/** Where imported text comes from; shown as a credit next to it (CC BY-SA). */
+export type TextSource = { url: string; title: string; license: string | null };
+
+export type TopicLink = {
+  slug: string;
+  name: string;
+  startYear: number;
+  endYear: number | null;
+  isApproximate: boolean;
+};
+
+export type PersonCard = {
+  slug: string;
+  name: string;
+  description: string | null;
+  birthYear: number;
+  deathYear: number | null;
+  isApproximate: boolean;
+  textLocale: Locale;
+  image: CommonsImage | null;
+};
+
+export type LifeEventKind = "birth" | "death" | "position" | "conflict" | "team" | "award" | "event";
+
+export type LifeItem = {
+  kind: LifeEventKind;
+  startYear: number;
+  endYear: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  isApproximate: boolean;
+  label: string;
+  labelLocale: Locale;
+  /** Set when the item is also an event on the site. */
+  eventSlug: string | null;
+};
+
+export type PersonPage = {
+  person: PersonCard & {
+    biography: string | null;
+    birthDate: string | null;
+    deathDate: string | null;
+    birthPlace: string | null;
+    deathPlace: string | null;
+  };
+  source: TextSource | null;
+  life: LifeItem[];
+  /** The biggest world events during their lifetime, shown faintly for context. */
+  world: (EventLink & { importance: 1 | 2 | 3; textLocale: Locale })[];
+  topics: TopicLink[];
+};
+
+export type TopicEventItem = EventLink & {
+  summary: string;
+  place: string;
+  importance: 1 | 2 | 3;
+  textLocale: Locale;
+  hasFullStory: boolean;
+};
+
+export type TopicPage = {
+  topic: Topic & { isSensitive: boolean };
+  source: TextSource | null;
+  events: TopicEventItem[];
+  people: PersonCard[];
 };
 
 export type CommonsImage = {
@@ -101,6 +181,10 @@ export type EventPage = {
   };
   era: { slug: string; name: string } | null;
   hero: CommonsImage | null;
+  /** Wikipedia article the summary is drawn from (imported events only). */
+  source: TextSource | null;
+  topics: TopicLink[];
+  people: PersonCard[];
   story: Story | null;
   previous: EventLink | null;
   next: EventLink | null;

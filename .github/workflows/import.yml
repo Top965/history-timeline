@@ -1,0 +1,72 @@
+name: Import data
+
+# Refreshes events, people and topics from Wikidata, Wikipedia and Wikimedia
+# Commons. Runs every Monday and whenever started by hand (Actions > Import data
+# > Run workflow). Loading needs the DATABASE_URL repository secret; without it
+# the run only builds the bundle.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+  # Pushing importer changes to an import/** branch builds a test bundle (no load).
+  push:
+    branches: ["import/**"]
+    paths: ["scripts/import/**", ".github/workflows/import.yml"]
+
+concurrency:
+  group: import
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Responses are cached for a week so a re-run does not ask Wikimedia again.
+      - uses: actions/cache@v4
+        with:
+          path: .import-cache
+          key: import-cache-${{ github.run_id }}
+          restore-keys: import-cache-
+      - name: Fetch from Wikidata, Wikipedia and Commons
+        run: npx tsx scripts/import/run.ts fetch --out data/import/bundle.json.gz --cache .import-cache
+      - name: Load into the database
+        if: github.ref == 'refs/heads/main'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::DATABASE_URL secret is not set, so nothing was loaded."
+            exit 0
+          fi
+          npx tsx scripts/import/run.ts load --in data/import/bundle.json.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: import-bundle
+          path: data/import/bundle.json.gz
+          retention-days: 30
+      # Keeps the latest bundle on the data/latest branch so it can be inspected and loaded elsewhere.
+      - name: Publish bundle to data/latest
+        run: |
+          cp data/import/bundle.json.gz "$RUNNER_TEMP/bundle.json.gz"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan data-latest
+          git rm -rfq --cached .
+          mkdir -p data/import && cp "$RUNNER_TEMP/bundle.json.gz" data/import/bundle.json.gz
+          git add -f data/import/bundle.json.gz
+          git commit -qm "Import bundle from ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
+          git push -fq origin HEAD:refs/heads/data/latest

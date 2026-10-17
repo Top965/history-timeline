@@ -9,20 +9,22 @@ export const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 export const USER_AGENT = "HistoryTimeline/0.1 (https://github.com/Top965/history-timeline)";
 
 type ExtValue = { value?: string };
+export type ImageInfoPage = {
+  title: string;
+  missing?: boolean;
+  imageinfo?: {
+    url: string;
+    descriptionurl: string;
+    width: number;
+    height: number;
+    mime: string;
+    extmetadata?: Record<string, ExtValue | undefined>;
+  }[];
+};
 export type ImageInfoResponse = {
   query?: {
-    pages?: {
-      title: string;
-      missing?: boolean;
-      imageinfo?: {
-        url: string;
-        descriptionurl: string;
-        width: number;
-        height: number;
-        mime: string;
-        extmetadata?: Record<string, ExtValue | undefined>;
-      }[];
-    }[];
+    normalized?: { from: string; to: string }[];
+    pages?: ImageInfoPage[];
   };
 };
 
@@ -69,7 +71,11 @@ function firstHref(html: string): string | null {
 
 /** Validates an imageinfo response and extracts what we store. Throws NotFreeError for non-free files. */
 export function parseImageInfo(res: ImageInfoResponse): CommonsFileInfo {
-  const page = res.query?.pages?.[0];
+  return parseImagePage(res.query?.pages?.[0]);
+}
+
+/** Same as parseImageInfo, for one page of a batched imageinfo response. */
+export function parseImagePage(page: ImageInfoPage | undefined): CommonsFileInfo {
   if (!page || page.missing || !page.imageinfo?.[0])
     throw new Error(`File not found on Commons: ${page?.title ?? "unknown"}`);
   const info = page.imageinfo[0];
