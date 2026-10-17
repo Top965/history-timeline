@@ -13,7 +13,9 @@ const top = (q: string) => {
       ? `era:${r.era.slug}`
       : r.type === "topic"
         ? `topic:${r.topic.slug}`
-        : `event:${r.event.slug}`;
+        : r.type === "person"
+          ? `person:${r.person.slug}`
+          : `event:${r.event.slug}`;
 };
 
 describe("search: the examples from the brief", () => {

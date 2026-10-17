@@ -2,7 +2,7 @@
 
 import { useId, useLayoutEffect, useMemo, useState } from "react";
 import type { TimelineData } from "@/lib/content/types";
-import { formatEventYears, formatRange, formatYear } from "@/lib/format/years";
+import { formatEventYears, formatRange, formatYear, lifeYears } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { buildSearchIndex, search, type SearchResult } from "@/lib/search/search";
@@ -22,6 +22,8 @@ export function resultName(r: SearchResult, locale: Locale): string {
       return getMessages(locale).readout.era(r.era.name);
     case "topic":
       return r.topic.name;
+    case "person":
+      return r.person.name;
     case "event":
       return r.event.title;
   }
@@ -38,6 +40,8 @@ function resultDetail(r: SearchResult, data: TimelineData, locale: Locale): stri
       return formatRange({ startYear: r.era.startYear, endYear: r.era.endYear }, locale);
     case "topic":
       return formatRange(r.topic, locale);
+    case "person":
+      return [lifeYears(r.person, locale), r.person.description].filter(Boolean).join(" · ");
     case "event":
       return formatEventYears(r.event, locale);
   }
@@ -126,7 +130,7 @@ export function SearchBox({ locale, data, onChoose }: Props) {
         {results.length ? (
           results.map((r, i) => (
             <button
-              key={`${r.type}:${r.type === "year" ? r.year : r.type === "era" ? r.era.slug : r.type === "topic" ? r.topic.slug : r.event.slug}`}
+              key={`${r.type}:${r.type === "year" ? r.year : r.type === "era" ? r.era.slug : r.type === "topic" ? r.topic.slug : r.type === "person" ? r.person.slug : r.event.slug}`}
               id={`${id}-r${i}`}
               type="button"
               role="option"

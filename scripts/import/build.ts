@@ -32,6 +32,8 @@ export type BuildContext = {
   images: Map<string, CommonsFileInfo>;
   /** Dates of wars and events that people took part in. */
   spans: Map<string, Span>;
+  /** Events that will be on the site; a person's "took part in" entries are kept only for these. */
+  siteEvents: Set<string>;
   sitelinks: Map<string, number>;
   /** Wikidata id → seed event slug. */
   seeds: Map<string, string>;
@@ -59,7 +61,7 @@ export function slugify(text: string): string {
 }
 
 /** How many Wikipedia editions cover it decides how prominent it is on the timeline. */
-export const importanceFor = (sitelinks: number): 1 | 2 | 3 => (sitelinks >= 100 ? 1 : sitelinks >= 55 ? 2 : 3);
+export const importanceFor = (sitelinks: number): 1 | 2 | 3 => (sitelinks >= 80 ? 1 : sitelinks >= 45 ? 2 : 3);
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const sentence = (s: string) => (/[.!?؟。]$/.test(s) ? s : `${s}.`);
@@ -81,7 +83,8 @@ const arTitle = (e: Entity) => e.sitelinks?.arwiki?.title ?? null;
 
 /** When something happened: a point in time, or a start and end. */
 export function entitySpan(e: Entity): Span | null {
-  const start = firstTime(e, "P585") ?? firstTime(e, "P580") ?? firstTime(e, "P571") ?? firstTime(e, "P577");
+  // A start time beats a point in time: wars often carry both (the point being when they ended).
+  const start = firstTime(e, "P580") ?? firstTime(e, "P585") ?? firstTime(e, "P571") ?? firstTime(e, "P577");
   if (!start) return null;
   let end = firstTime(e, "P582") ?? firstTime(e, "P576");
   if (end && end.year < start.year) end = null;
@@ -244,6 +247,8 @@ export function buildLife(e: Entity, ctx: BuildContext): LifeEvent[] {
       const id = itemId(c.mainsnak);
       const en = labelOf(ctx, id, "en");
       if (!id || !en) continue;
+      // "Participant in" also lists every club season; only events on the site are worth a row.
+      if (kind === "event" && !ctx.siteEvents.has(id)) continue;
       let span: Span | null;
       if (kind === "conflict" || kind === "event") {
         span = ctx.spans.get(id) ?? null;

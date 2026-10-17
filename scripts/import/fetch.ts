@@ -21,7 +21,7 @@ import {
 import { commonsTitle, getImages } from "./commons";
 import { chunk, type Http } from "./http";
 import { BundleSchema, type Bundle, type ImportEvent } from "./model";
-import { claims, getEntities, label, sparql, type Entity } from "./wikidata";
+import { claims, getEntities, itemId, label, sparql, type Entity } from "./wikidata";
 import { getLeads, resolveTitles } from "./wikipedia";
 
 export type FetchLimits = {
@@ -74,7 +74,6 @@ const EVENT_CLASSES = [
   "Q1261499", // naval battle
   "Q2380335", // election (national)
   "Q1656682", // event
-  "Q27020041", // sports season (World Cups, Olympics)
   "Q159821", // Summer Olympic Games
 ];
 
@@ -102,6 +101,16 @@ const USED_CLAIMS = [
   "P166",
   "P1344",
 ];
+
+/** Recurring things found by class that are not moments in history (holidays, league seasons). */
+const NOT_EVENTS = new Set([
+  "Q1197685", // public holiday
+  "Q1445650", // holiday
+  "Q15275719", // recurring event
+  "Q27020041", // sports season
+  "Q1539532", // sports season of a sports club
+  "Q132241", // festival
+]);
 
 const ids = (rows: Record<string, string>[], key: string) => rows.map((r) => r[key]).filter((x) => /^Q\d+$/.test(x));
 
@@ -298,7 +307,10 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
     getEntities(http, peopleIds, props, undefined, USED_CLAIMS),
     getEntities(http, topicEntityIds, props, undefined, USED_CLAIMS),
   ]);
-  const events = [...eventEntities.values()].filter((e) => !isHuman(e));
+  const chosen = new Set([...seeds.keys(), ...configEventIds, ...[...autoParts.values()].flat()]);
+  const events = [...eventEntities.values()].filter(
+    (e) => !isHuman(e) && (chosen.has(e.id) || !claims(e, "P31").some((c) => NOT_EVENTS.has(itemId(c.mainsnak) ?? ""))),
+  );
   const people = [...peopleEntities.values()].filter(isHuman);
 
   const missingCounts = [...eventIds, ...peopleIds, ...topicEntityIds].filter(
@@ -333,13 +345,14 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
   const images = await getImages(http, imageNames);
 
   // 5. Build records.
-  const ctx: BuildContext = { labels, leads, images, spans, sitelinks, seeds, currentYear };
+  const ctx: BuildContext = { labels, leads, images, spans, sitelinks, seeds, currentYear, siteEvents: new Set() };
   const builtEvents = dedupeSlugs(
     events.map((e) => buildEvent(e, ctx)).filter((x): x is ImportEvent => !!x),
     (r) => r.startYear,
     new Set(),
     (r) => r.seedSlug != null,
   );
+  ctx.siteEvents = new Set(builtEvents.map((e) => e.wikidataId));
   const builtPeople = dedupeSlugs(
     people.map((e) => buildPerson(e, ctx)).filter((x) => !!x),
     (r) => r.birthYear,

@@ -13,6 +13,8 @@ export function seedTimelineData(currentYear = 2026): TimelineData {
   const fullStories = new Set(seed.stories.filter((s) => s.layout === "full").map((s) => s.event));
   return {
     currentYear,
+    // People come from the importer, not the seed; tests that need them add their own.
+    people: [],
     eras: seed.eras.map((e) => ({
       slug: e.slug,
       name: e.translations.en.name,

@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { locale as localeParam } from "next/root-params";
 import { StoryView } from "@/components/story/StoryView";
-import { Toolbar } from "@/components/ui/Toolbar";
+import { PageBar } from "@/components/ui/PageBar";
 import { commonsThumbUrl } from "@/lib/commons/thumbnails";
 import { getEventPage, getPublishedEventSlugs } from "@/lib/db/queries";
 import { formatEventYears } from "@/lib/format/years";
 import { isLocale, LOCALES } from "@/lib/i18n/config";
-import { getMessages } from "@/lib/i18n/messages";
 
+/** Only the biggest events are built ahead of time; the rest are built on their first visit and cached. */
 export async function generateStaticParams() {
   const events = await getPublishedEventSlugs();
-  return events.map(({ slug }) => ({ slug }));
+  const top = events.filter((e) => e.importance === 1);
+  return (top.length ? top : events).map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/events/[slug]">): Promise<Metadata> {
@@ -45,23 +45,15 @@ export default async function EventPage({ params }: PageProps<"/[locale]/events/
   const { slug } = await params;
   const page = await getEventPage(locale, slug);
   if (!page) notFound();
-  const t = getMessages(locale);
   const other = locale === "ar" ? "en" : "ar";
 
   return (
     <>
-      <div className="sticky top-0 z-[2] border-b border-line bg-bg pt-[env(safe-area-inset-top,0px)]">
-        <div className="gutter mx-auto flex max-w-[760px] items-center justify-between gap-2.5 py-2.5">
-          <Link href={`/${locale}`} className="btn text-ink no-underline">
-            <span className="inline-block rtl:-scale-x-100" aria-hidden="true">
-              ←
-            </span>{" "}
-            {t.story.back}
-          </Link>
-          <span className="hidden font-mono text-xs text-muted sm:inline">{formatEventYears(page.event, locale)}</span>
-          <Toolbar locale={locale} alternateHref={`/${other}/events/${page.event.slug}`} />
-        </div>
-      </div>
+      <PageBar
+        locale={locale}
+        label={formatEventYears(page.event, locale)}
+        alternateHref={`/${other}/events/${page.event.slug}`}
+      />
       <main>
         <StoryView locale={locale} page={page} />
       </main>

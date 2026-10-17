@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { EventLink, EventPage } from "@/lib/content/types";
 import { commonsThumbUrl } from "@/lib/commons/thumbnails";
-import { formatDate, formatDateRange, formatEventYears } from "@/lib/format/years";
+import { formatDate, formatDateRange, formatEventYears, formatRange } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
+import { PersonChip } from "@/components/people/PersonChip";
+import { WikipediaCredit } from "@/components/ui/WikipediaCredit";
 import { CommonsFigure } from "./CommonsFigure";
 import { ShowOnTimeline } from "./ShowOnTimeline";
 
@@ -94,13 +96,57 @@ function ShortStory({ locale, page, eraLabel }: { locale: Locale; page: EventPag
         <dt className="text-muted">{t.story.era}</dt>
         <dd className="m-0">{page.era?.name}</dd>
       </dl>
+      <Connections locale={locale} page={page} />
       <h2 className={H3}>{t.story.beforeAndAfter}</h2>
       <div className="flex flex-wrap gap-2">
         {page.previous && <RelatedChip locale={locale} link={page.previous} />}
         {page.next && <RelatedChip locale={locale} link={page.next} />}
         <ShowOnTimeline locale={locale} year={event.startYear} />
       </div>
-      <p className="note">{t.story.shortNote}</p>
+      {page.source ? (
+        <WikipediaCredit locale={locale} source={page.source} />
+      ) : (
+        <p className="note">{t.story.shortNote}</p>
+      )}
+    </>
+  );
+}
+
+/** The topics this event is part of and the people who took part. */
+function Connections({ locale, page }: { locale: Locale; page: EventPage }) {
+  const t = getMessages(locale);
+  if (!page.topics.length && !page.people.length) return null;
+  return (
+    <>
+      {page.topics.length > 0 && (
+        <>
+          <h2 className={H3}>{t.related.topics}</h2>
+          <div className="flex flex-wrap gap-2">
+            {page.topics.map((tp) => (
+              <Link
+                key={tp.slug}
+                href={`/${locale}/topics/${tp.slug}`}
+                className="chip text-ink no-underline hover:border-accent"
+              >
+                <span dir="auto">{tp.name}</span>
+                <span className="chip-range">{formatRange(tp, locale)}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+      {page.people.length > 0 && (
+        <>
+          <h2 className={H3}>{t.related.people}</h2>
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5 p-0">
+            {page.people.map((p) => (
+              <li key={p.slug} className="min-w-0">
+                <PersonChip locale={locale} person={p} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }
@@ -274,6 +320,8 @@ function FullStory({ locale, page, eraLabel }: { locale: Locale; page: EventPage
           <ShowOnTimeline locale={locale} year={event.startYear} />
         </div>
       </section>
+
+      <Connections locale={locale} page={page} />
 
       <p className="note">
         {story.footnote && (

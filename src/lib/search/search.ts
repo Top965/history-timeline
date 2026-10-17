@@ -1,9 +1,9 @@
-import type { Era, TimelineData, TimelineEvent, Topic } from "@/lib/content/types";
+import type { Era, PersonSummary, TimelineData, TimelineEvent, Topic } from "@/lib/content/types";
 import { STOP_WORDS, toAsciiDigits, wordScore, words } from "./text";
 import { MIN_YEAR } from "@/lib/timeline/geometry";
 
 /**
- * Keyword search with typo tolerance over years, eras, topics and events.
+ * Keyword search with typo tolerance over years, eras, topics, people and events.
  * Runs in the browser over data the page already has. Step 4 replaces the
  * scoring with meaning-based search behind the same `search()` signature.
  */
@@ -12,11 +12,13 @@ export type SearchResult =
   | { type: "year"; year: number; score: number }
   | { type: "era"; era: Era; score: number }
   | { type: "topic"; topic: Topic; score: number }
+  | { type: "person"; person: PersonSummary; score: number }
   | { type: "event"; event: TimelineEvent; score: number };
 
 type Entry =
   | { type: "era"; ref: Era; boost: number; words: Set<string>; title: null }
   | { type: "topic"; ref: Topic; boost: number; words: Set<string>; title: null }
+  | { type: "person"; ref: PersonSummary; boost: number; words: Set<string>; title: Set<string> }
   | { type: "event"; ref: TimelineEvent; boost: number; words: Set<string>; title: Set<string> };
 
 export type SearchIndex = { entries: Entry[]; currentYear: number };
@@ -31,6 +33,14 @@ export function buildSearchIndex(data: TimelineData): SearchIndex {
       boost: 3,
       words: bag(t.name, t.keywords),
       title: null,
+    })),
+    // A name typed in full should beat events that merely mention it.
+    ...data.people.map((p): Entry => ({
+      type: "person",
+      ref: p,
+      boost: 2.5,
+      words: bag(p.name, p.keywords),
+      title: bag(p.name),
     })),
     ...data.eras.map((e): Entry => ({ type: "era", ref: e, boost: 0.5, words: bag(e.name, e.keywords), title: null })),
     ...data.events.map((e): Entry => ({
@@ -103,6 +113,7 @@ export function search(index: SearchIndex, query: string, limit = 7): SearchResu
       (entry.type === "event" ? (3 - entry.ref.importance) * 0.2 : 0);
     if (entry.type === "topic") out.push({ type: "topic", topic: entry.ref, score });
     else if (entry.type === "era") out.push({ type: "era", era: entry.ref, score });
+    else if (entry.type === "person") out.push({ type: "person", person: entry.ref, score });
     else out.push({ type: "event", event: entry.ref, score });
   }
 
