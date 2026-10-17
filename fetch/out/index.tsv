@@ -1,0 +1,4 @@
+f21738832a54beff	200	https://www.wikidata.org/wiki/Special:EntityData/Q1316.json
+758551e9c3ef560a	200	https://en.wikipedia.org/api/rest_v1/page/summary/Saddam_Hussein
+ce3a3158c7f1d631	200	https://query.wikidata.org/sparql?query=SELECT%20%3Fitem%20%3FitemLabel%20WHERE%20%7B%20VALUES%20%3Fitem%20%7Bwd%3AQ1316%7D%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%2Car%22.%20%7D%20%7D&format=json
+2d94dbcd89628b77	200	https://commons.wikimedia.org/w/api.php?action=query&titles=File:Saddam_Hussein_in_1979.jpg&prop=imageinfo&iiprop=extmetadata%7Curl&iiurlwidth=640&format=json
