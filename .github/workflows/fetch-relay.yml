@@ -28,7 +28,7 @@ jobs:
             case "$url" in \#*) continue ;; esac
             host=$(printf '%s' "$url" | sed -E 's#^https://([^/]+)/.*#\1#')
             case "$host" in
-              www.wikidata.org|query.wikidata.org|en.wikipedia.org|ar.wikipedia.org|commons.wikimedia.org) ;;
+              www.wikidata.org|query.wikidata.org|en.wikipedia.org|ar.wikipedia.org|commons.wikimedia.org|qlever.cs.uni-freiburg.de|qlever.dev) ;;
               *) echo "skip (host not allowed): $url"; continue ;;
             esac
             name=$(printf '%s' "$url" | sha1sum | cut -c1-16)
