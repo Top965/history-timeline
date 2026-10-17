@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { TimelineData } from "@/lib/content/types";
+import type { SearchData } from "@/lib/content/types";
 import { seedSchema } from "../../scripts/seed/schema";
 
 /** The seeded content as the website sees it, built without a database (mirrors src/lib/db/queries.ts). */
-export function seedTimelineData(currentYear = 2026): TimelineData {
+export function seedTimelineData(currentYear = 2026): SearchData {
   const raw = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../supabase/seed-data/content.json"), "utf8"));
   const seed = seedSchema.parse(raw);
   const all = <T extends { keywords: string[] }>(tr: Record<string, T>, extra: (t: T) => string[]) => [

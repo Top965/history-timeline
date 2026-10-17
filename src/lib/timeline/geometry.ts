@@ -8,6 +8,8 @@ export type View = { center: number; span: number };
 export const MIN_SPAN = 6; // years visible when fully zoomed in
 export const MAX_SPAN = 6200; // years visible when fully zoomed out
 export const MIN_YEAR = -3600;
+/** Where the home timeline opens. */
+export const INITIAL_VIEW: View = { center: 1880, span: 380 };
 
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 

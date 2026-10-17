@@ -1,16 +1,18 @@
 "use client";
 
-import { useId, useLayoutEffect, useMemo, useState } from "react";
-import type { TimelineData } from "@/lib/content/types";
+import { useId, useLayoutEffect, useState } from "react";
+import type { Era } from "@/lib/content/types";
 import { formatEventYears, formatRange, formatYear, lifeYears } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
-import { buildSearchIndex, search, type SearchResult } from "@/lib/search/search";
+import type { SearchResult } from "@/lib/search/search";
 import { eraAt } from "@/lib/timeline/geometry";
+import { useSearch } from "./useSearch";
 
 type Props = {
   locale: Locale;
-  data: TimelineData;
+  eras: Era[];
+  currentYear: number;
   onChoose: (result: SearchResult) => void;
 };
 
@@ -29,11 +31,11 @@ export function resultName(r: SearchResult, locale: Locale): string {
   }
 }
 
-function resultDetail(r: SearchResult, data: TimelineData, locale: Locale): string {
+function resultDetail(r: SearchResult, eras: Era[], locale: Locale): string {
   const t = getMessages(locale);
   switch (r.type) {
     case "year": {
-      const era = eraAt(data.eras, r.year);
+      const era = eraAt(eras, r.year);
       return era ? t.readout.era(era.name) : "";
     }
     case "era":
@@ -48,14 +50,13 @@ function resultDetail(r: SearchResult, data: TimelineData, locale: Locale): stri
 }
 
 /** Search combobox (ARIA 1.2 pattern): type, arrow through results, Enter to go. */
-export function SearchBox({ locale, data, onChoose }: Props) {
+export function SearchBox({ locale, eras, currentYear, onChoose }: Props) {
   const t = getMessages(locale).search;
   const id = useId();
-  const index = useMemo(() => buildSearchIndex(data), [data]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const results = useMemo(() => search(index, query), [index, query]);
+  const { results, status, settled } = useSearch(locale, query, currentYear);
   const listId = `${id}-results`;
   const showList = open && query.trim().length > 0;
 
@@ -73,9 +74,11 @@ export function SearchBox({ locale, data, onChoose }: Props) {
     <form
       role="search"
       className="relative flex max-w-[460px] min-w-0 flex-[1_1_320px] gap-1.5"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        if (results.length) choose(results[Math.min(active, results.length - 1)]);
+        // Enter can beat the server's answer; wait for it.
+        const ready = status === "loading" ? await settled() : results;
+        if (ready.length) choose(ready[Math.min(active, ready.length - 1)]);
         else setOpen(true);
       }}
     >
@@ -122,6 +125,7 @@ export function SearchBox({ locale, data, onChoose }: Props) {
       <div
         id={listId}
         role="listbox"
+        aria-busy={status === "loading"}
         aria-label={t.label}
         hidden={!showList}
         className="absolute inset-x-0 top-[calc(100%+6px)] z-[15] grid max-h-[360px] gap-0.5 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(0,0,0,.18)]"
@@ -145,13 +149,15 @@ export function SearchBox({ locale, data, onChoose }: Props) {
               <span className="min-w-0 font-semibold" dir="auto">
                 {resultName(r, locale)}
                 <small className="block font-mono text-[11px] font-normal text-muted">
-                  {resultDetail(r, data, locale)}
+                  {resultDetail(r, eras, locale)}
                 </small>
               </span>
             </button>
           ))
         ) : (
-          <div className="p-2.5 text-sm text-muted">{t.noMatch}</div>
+          <div className="p-2.5 text-sm text-muted">
+            {status === "loading" ? t.searching : status === "error" ? t.failed : t.noMatch}
+          </div>
         )}
       </div>
     </form>

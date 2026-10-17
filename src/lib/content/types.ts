@@ -49,13 +49,28 @@ export type PersonSummary = {
   keywords: string[];
 };
 
+/**
+ * What a timeline page ships to the browser: the eras and the biggest events
+ * (importance 1). Smaller events load by period as the visitor zooms in
+ * (see `TimelineTile`), and search runs on the server over `SearchData`.
+ */
 export type TimelineData = {
+  currentYear: number;
+  eras: Era[];
+  events: TimelineEvent[];
+};
+
+/** Everything search looks through. Built on the server only. */
+export type SearchData = {
   currentYear: number;
   eras: Era[];
   events: TimelineEvent[];
   topics: Topic[];
   people: PersonSummary[];
 };
+
+/** Smaller events for one stretch of time, loaded as the visitor zooms in. */
+export type TimelineTile = { level: 2 | 3; tile: number; events: TimelineEvent[] };
 
 /** Where imported text comes from; shown as a credit next to it (CC BY-SA). */
 export type TextSource = { url: string; title: string; license: string | null };

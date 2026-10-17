@@ -110,6 +110,21 @@ test.describe("timeline", () => {
     await expect(timeline(page).getByRole("button", { name: /Apollo 11 Moon landing/ })).toHaveClass(/pin-pulse/);
   });
 
+  test("loads smaller events when zooming into another period", async ({ page }) => {
+    await page.goto("/en#year=-1332&span=120");
+    await expect(readout(page)).toHaveText("1,332 BCE");
+    // Tutankhamun is a smaller event, so it only arrives with that period's events.
+    await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toBeVisible();
+  });
+
+  test("finds and highlights a smaller event far from the opening view", async ({ page }) => {
+    await page.goto("/en");
+    await search(page, "tutankhamun");
+    await page.getByRole("option", { name: /Tutankhamun becomes pharaoh/ }).click();
+    await expect(readout(page)).toHaveText("1,332 BCE");
+    await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toHaveClass(/pin-pulse/);
+  });
+
   test("has no serious accessibility problems", async ({ page }) => {
     await page.goto("/en");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

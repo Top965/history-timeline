@@ -170,11 +170,11 @@ describe.skipIf(!url)("database", () => {
       queries = await import("@/lib/db/queries");
     });
 
-    it("loads the timeline in Arabic", async () => {
+    it("ships only the biggest events with the timeline page", async () => {
       const en = await queries.getTimelineData("en");
       const ar = await queries.getTimelineData("ar");
-      expect(en.events).toHaveLength(64);
-      expect(en.events[0].slug).toBe("writing-begins-in-sumer");
+      expect(en.events).toHaveLength(15);
+      expect(en.events.every((e) => e.importance === 1 && e.keywords.length === 0)).toBe(true);
       expect(en.eras.map((e) => e.name)).toEqual([
         "Ancient",
         "Classical",
@@ -184,16 +184,41 @@ describe.skipIf(!url)("database", () => {
         "Contemporary",
       ]);
       expect(ar.eras[0].name).toBe("العصور القديمة");
-      const ipAr = ar.topics.find((t) => t.slug === "israeli-palestinian-conflict")!;
-      expect(ipAr.name).toBe("الصراع الإسرائيلي الفلسطيني");
-      expect(ipAr.summaryLocale).toBe("ar");
       expect(ar.events.every((e) => e.textLocale === "ar")).toBe(true);
       expect(ar.events.find((e) => e.slug === "the-hijra")?.title).toBe("الهجرة النبوية");
       expect(en.events.find((e) => e.slug === "world-war-i")?.hasFullStory).toBe(true);
+    });
+
+    it("loads smaller events by stretch of time", async () => {
+      const tile = await queries.getTimelineTile("en", 3, 19);
+      expect(tile.events.map((e) => e.slug)).toEqual(
+        expect.arrayContaining(["ottoman-empire-ends", "united-nations-founded", "first-intifada"]),
+      );
+      expect(tile.events.every((e) => e.importance === 3)).toBe(true);
+      expect(tile.events.some((e) => e.slug === "oslo-accords")).toBe(true);
+      expect(tile.events.some((e) => e.slug === "second-intifada")).toBe(false);
+      // Events that started earlier but run into the tile come along.
+      const next = await queries.getTimelineTile("en", 3, 20);
+      expect(next.events.map((e) => e.slug)).toEqual(expect.arrayContaining(["second-intifada"]));
+      const level2 = await queries.getTimelineTile("ar", 2, 1);
+      expect(level2.events.find((e) => e.slug === "russian-revolution")?.textLocale).toBe("ar");
+    });
+
+    it("loads everything search needs", async () => {
+      const en = await queries.getSearchData("en");
+      const ar = await queries.getSearchData("ar");
+      expect(en.events).toHaveLength(64);
+      expect(en.events[0].slug).toBe("writing-begins-in-sumer");
+      const ipAr = ar.topics.find((t) => t.slug === "israeli-palestinian-conflict")!;
+      expect(ipAr.name).toBe("الصراع الإسرائيلي الفلسطيني");
+      expect(ipAr.summaryLocale).toBe("ar");
       const wc = en.topics.find((t) => t.slug === "fifa-world-cup")!;
       expect(wc.eventSlugs[0]).toBe("first-fifa-world-cup");
       expect(wc.endYear).toBeNull();
       expect(wc.keywords).toEqual(expect.arrayContaining(["football", "كأس العالم"]));
+      const { searchSite } = await import("@/lib/search/server");
+      const [first] = await searchSite("ar", "الانتفاضة الاولى");
+      expect(first).toMatchObject({ type: "event", event: { slug: "first-intifada", keywords: [] } });
     });
 
     it("loads the full World War I story", async () => {

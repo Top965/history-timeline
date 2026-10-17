@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TimelineData } from "@/lib/content/types";
+import type { TimelineData, TimelineEvent, TimelineTile } from "@/lib/content/types";
 import { formatEventYears, formatYear, formatYearShort } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
@@ -14,6 +14,7 @@ import {
   eraAt,
   eventsAround,
   fitRange,
+  INITIAL_VIEW,
   interpolateView,
   viewForEvent,
   zoomAt,
@@ -23,19 +24,28 @@ import { Toolbar } from "@/components/ui/Toolbar";
 import { parseTimelineHash, requestTimelineJump, subscribeTimelineJump } from "./jump";
 import { SearchBox } from "./SearchBox";
 import { Track } from "./Track";
+import { useTiles } from "./useTiles";
 
-const INITIAL_VIEW: View = { center: 1880, span: 380 };
 const FLY_MS = 700;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function Explorer({ locale, data }: { locale: Locale; data: TimelineData }) {
+type Props = {
+  locale: Locale;
+  data: TimelineData;
+  /** Smaller events for the opening view, rendered with the page so nothing pops in. */
+  initialTiles: TimelineTile[];
+};
+
+export function Explorer({ locale, data, initialTiles }: Props) {
   const t = getMessages(locale);
   const router = useRouter();
   const { currentYear } = data;
   const [view, setViewState] = useState<View>(INITIAL_VIEW);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  // A searched event that isn't loaded yet (search covers every event; the page only the biggest).
+  const [chosen, setChosen] = useState<TimelineEvent | null>(null);
   const viewRef = useRef(view);
   const animRef = useRef(0);
   const instrumentRef = useRef<HTMLDivElement>(null);
@@ -92,9 +102,17 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
     };
   }, [flyTo, setView, stopAnimation]);
 
+  const tileEvents = useTiles(locale, view, currentYear, initialTiles);
+  const events = useMemo(() => {
+    const all = new Map(data.events.map((e) => [e.slug, e]));
+    for (const e of tileEvents) if (!all.has(e.slug)) all.set(e.slug, e);
+    if (chosen && !all.has(chosen.slug)) all.set(chosen.slug, chosen);
+    return [...all.values()];
+  }, [data.events, tileEvents, chosen]);
+
   const year = Math.round(view.center);
   const era = eraAt(data.eras, year);
-  const around = useMemo(() => eventsAround(data.events, view), [data.events, view]);
+  const around = useMemo(() => eventsAround(events, view), [events, view]);
 
   const openEvent = (slug: string) => router.push(`/${locale}/events/${slug}`);
 
@@ -109,6 +127,7 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
       const end = r.era.endYear ?? currentYear;
       flyTo(fitRange(r.era.startYear, Math.min(end, currentYear)));
     } else {
+      setChosen(r.event);
       setHighlighted(r.event.slug);
       flyTo(viewForEvent(r.event));
     }
@@ -128,7 +147,7 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
           <p className="m-0 text-[13px] text-muted">{t.tagline}</p>
         </div>
         <div className="flex min-w-0 flex-[1_1_320px] flex-wrap items-center justify-end gap-2">
-          <SearchBox locale={locale} data={data} onChoose={choose} />
+          <SearchBox locale={locale} eras={data.eras} currentYear={currentYear} onChoose={choose} />
           <Toolbar locale={locale} alternateHref={`/${locale === "ar" ? "en" : "ar"}`} />
         </div>
       </header>
@@ -175,7 +194,7 @@ export function Explorer({ locale, data }: { locale: Locale; data: TimelineData 
           locale={locale}
           view={view}
           eras={data.eras}
-          events={data.events}
+          events={events}
           currentYear={currentYear}
           focus={null}
           highlighted={highlighted}

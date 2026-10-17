@@ -10,6 +10,8 @@ export type Messages = {
     placeholder: string;
     go: string;
     noMatch: string;
+    searching: string;
+    failed: string;
     types: { year: string; era: string; topic: string; event: string; person: string };
   };
   readout: { hint: string; era: (name: string) => string };
@@ -89,6 +91,8 @@ const en: Messages = {
     placeholder: "Search: saddam hussein, world cup, 1969…",
     go: "Go",
     noMatch: "No match yet. Try a place, empire, war or year, like “ottoman”, “cold war” or “1969”.",
+    searching: "Searching…",
+    failed: "Search isn’t working right now. Please try again.",
     types: { year: "Year", era: "Era", topic: "Topic", event: "Event", person: "Person" },
   },
   readout: {
@@ -193,6 +197,8 @@ const ar: Messages = {
     go: "اذهب",
     noMatch:
       "لا توجد نتائج بعد. جرّب مكانًا أو إمبراطورية أو حربًا أو سنة، مثل «العثمانية» أو «الحرب الباردة» أو «1969».",
+    searching: "جارٍ البحث…",
+    failed: "البحث لا يعمل الآن. حاول مرة أخرى.",
     types: { year: "سنة", era: "عصر", topic: "موضوع", event: "حدث", person: "شخصية" },
   },
   readout: {
