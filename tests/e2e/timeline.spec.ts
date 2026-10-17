@@ -199,7 +199,8 @@ test.describe("Arabic and themes", () => {
     await expect(page.getByRole("option").first()).toContainText("الدولة العثمانية");
 
     await page.goto("/ar/events/world-war-i");
-    await expect(page.getByRole("note")).toContainText("غير متوفر بالعربية");
+    await expect(page.getByRole("heading", { name: "الشرارة" })).toBeVisible();
+    await expect(page.getByText("غير متوفر بالعربية")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "العودة إلى الخط الزمني" })).toBeVisible();
   });
 

@@ -32,7 +32,7 @@ describe.skipIf(!url)("database", () => {
       const [c] = await sql!`
         select (select count(*)::int from events) as events, (select count(*)::int from topics) as topics,
                (select count(*)::int from eras) as eras, (select count(*)::int from story_chapters) as chapters`;
-      expect(c).toEqual({ events: 64, topics: 11, eras: 6, chapters: 7 });
+      expect(c).toEqual({ events: 64, topics: 11, eras: 6, chapters: 14 });
     });
 
     it("is idempotent", async () => {
@@ -214,6 +214,16 @@ describe.skipIf(!url)("database", () => {
         "wall-street-crash",
         "world-war-ii",
       ]);
+    });
+
+    it("loads the Arabic World War I story", async () => {
+      const page = (await queries.getEventPage("ar", "world-war-i"))!;
+      const story = page.story!;
+      expect(story.locale).toBe("ar");
+      expect(story.chapters.map((c) => c.title)[0]).toBe("الشرارة");
+      expect(story.keyDates[0]).toEqual({ date: "1914-06-28", label: "اغتيال الأرشيدوق في سراييفو", chapter: 1 });
+      expect(story.sides[0].members).toContainEqual({ name: "الولايات المتحدة", note: "من 1917" });
+      expect(story.related.map((r) => r.slug)).toContain("world-war-ii");
     });
 
     it("loads short events with neighbours and returns null for unknown slugs", async () => {
