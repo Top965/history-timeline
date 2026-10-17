@@ -1,0 +1,395 @@
+import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
+import type {
+  CommonsImage,
+  Era,
+  EventLink,
+  EventPage,
+  Story,
+  StoryChapter,
+  TimelineData,
+  TimelineEvent,
+  Topic,
+} from "@/lib/content/types";
+import { CONTENT_SOURCE_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import { publicRead, type Tx } from "./client";
+
+/** Cache tags, so later steps (admin approval) can revalidate exactly what changed. */
+export const CACHE_TAGS = {
+  timeline: "timeline",
+  event: (slug: string) => `event:${slug}`,
+} as const;
+
+const SRC = CONTENT_SOURCE_LOCALE;
+const asLocale = (v: string): Locale => (isLocale(v) ? v : SRC);
+const asImportance = (v: number): 1 | 2 | 3 => (v === 1 || v === 2 ? v : 3);
+/** postgres.js returns `date` columns as JS Dates at UTC midnight; we keep ISO strings. */
+const isoDate = (v: Date | string | null): string | null =>
+  v == null ? null : typeof v === "string" ? v.slice(0, 10) : v.toISOString().slice(0, 10);
+
+// ---------------------------------------------------------------------------
+// Timeline
+// ---------------------------------------------------------------------------
+
+type EraRow = {
+  slug: string;
+  name: string;
+  start_year: number;
+  end_year: number | null;
+  color_token: string;
+  keywords: string[];
+};
+
+type EventRow = {
+  slug: string;
+  title: string;
+  place: string;
+  start_year: number;
+  end_year: number | null;
+  is_approximate: boolean;
+  importance: number;
+  has_full_story: boolean;
+  text_locale: string;
+  keywords: string[];
+};
+
+type TopicRow = {
+  slug: string;
+  name: string;
+  summary: string;
+  summary_locale: string;
+  start_year: number;
+  end_year: number | null;
+  is_approximate: boolean;
+  event_slugs: string[];
+  keywords: string[];
+};
+
+async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, "currentYear">> {
+  const eras = await tx<EraRow[]>`
+    select e.slug, coalesce(l.name, d.name) as name, e.start_year, e.end_year, e.color_token,
+      (select coalesce(array_agg(distinct k), '{}') from public.era_translations t, unnest(t.keywords || t.name) k
+        where t.era_id = e.id) as keywords
+    from public.eras e
+    join public.era_translations d on d.era_id = e.id and d.locale = ${SRC}
+    left join public.era_translations l on l.era_id = e.id and l.locale = ${locale}
+    order by e.sort_order`;
+
+  const events = await tx<EventRow[]>`
+    select e.slug, coalesce(l.title, d.title) as title, coalesce(l.place_label, d.place_label) as place,
+      e.start_year, e.end_year, e.is_approximate, e.importance,
+      exists (select 1 from public.stories s where s.event_id = e.id and s.layout = 'full') as has_full_story,
+      case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
+      (select coalesce(array_agg(distinct k), '{}') from public.event_translations t, unnest(t.keywords) k
+        where t.event_id = e.id) as keywords
+    from public.events e
+    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+    where e.status = 'published'
+    order by e.start_year, e.importance, e.slug`;
+
+  const topics = await tx<TopicRow[]>`
+    select t.slug, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
+      case when l.summary is null then ${SRC} else ${locale} end as summary_locale,
+      t.start_year, t.end_year, t.is_approximate,
+      coalesce((select array_agg(e.slug order by te.sort_order)
+        from public.topic_events te join public.events e on e.id = te.event_id
+        where te.topic_id = t.id), '{}') as event_slugs,
+      (select coalesce(array_agg(distinct k), '{}') from public.topic_translations tt, unnest(tt.keywords || tt.name) k
+        where tt.topic_id = t.id) as keywords
+    from public.topics t
+    join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
+    left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
+    where t.status = 'published'
+    order by t.start_year, t.slug`;
+
+  return {
+    eras: eras.map((r): Era => ({
+      slug: r.slug,
+      name: r.name,
+      startYear: r.start_year,
+      endYear: r.end_year,
+      colorToken: r.color_token,
+      keywords: r.keywords,
+    })),
+    events: events.map((r): TimelineEvent => ({
+      slug: r.slug,
+      title: r.title,
+      place: r.place,
+      startYear: r.start_year,
+      endYear: r.end_year,
+      isApproximate: r.is_approximate,
+      importance: asImportance(r.importance),
+      hasFullStory: r.has_full_story,
+      textLocale: asLocale(r.text_locale),
+      keywords: r.keywords,
+    })),
+    topics: topics.map((r): Topic => ({
+      slug: r.slug,
+      name: r.name,
+      summary: r.summary,
+      summaryLocale: asLocale(r.summary_locale),
+      startYear: r.start_year,
+      endYear: r.end_year,
+      isApproximate: r.is_approximate,
+      eventSlugs: r.event_slugs,
+      keywords: r.keywords,
+    })),
+  };
+}
+
+/** Everything the timeline page needs, cached and shared by all visitors. */
+export async function getTimelineData(locale: Locale): Promise<TimelineData> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline);
+  const data = await publicRead("timeline.load", (tx) => loadTimeline(tx, locale), { locale });
+  return { ...data, currentYear: new Date().getUTCFullYear() };
+}
+
+// ---------------------------------------------------------------------------
+// Event page
+// ---------------------------------------------------------------------------
+
+type ImageRow = {
+  commons_file: string;
+  file_page_url: string;
+  original_url: string;
+  width: number;
+  height: number;
+  mime_type: string;
+  license_short_name: string;
+  license_url: string | null;
+  author_text: string;
+  author_url: string | null;
+  caption: string | null;
+  alt_text: string | null;
+};
+
+const imageColumns = (tx: Tx, locale: Locale) => tx`
+  i.commons_file, i.file_page_url, i.original_url, i.width, i.height, i.mime_type,
+  i.license_short_name, i.license_url, i.author_text, i.author_url,
+  coalesce(
+    (select it.caption from public.image_translations it where it.image_id = i.id and it.locale = ${locale}),
+    (select it.caption from public.image_translations it where it.image_id = i.id and it.locale = ${SRC})
+  ) as caption,
+  coalesce(
+    (select it.alt_text from public.image_translations it where it.image_id = i.id and it.locale = ${locale}),
+    (select it.alt_text from public.image_translations it where it.image_id = i.id and it.locale = ${SRC})
+  ) as alt_text`;
+
+function toImage(r: ImageRow, fallbackCaption: string): CommonsImage {
+  const caption = r.caption ?? fallbackCaption;
+  return {
+    commonsFile: r.commons_file,
+    filePageUrl: r.file_page_url,
+    originalUrl: r.original_url,
+    width: r.width,
+    height: r.height,
+    mimeType: r.mime_type,
+    license: r.license_short_name,
+    licenseUrl: r.license_url,
+    author: r.author_text,
+    authorUrl: r.author_url,
+    caption,
+    alt: r.alt_text ?? caption,
+  };
+}
+
+type EventPageRow = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  place: string;
+  media_hint: string | null;
+  text_locale: string;
+  start_year: number;
+  end_year: number | null;
+  start_date: Date | null;
+  end_date: Date | null;
+  is_approximate: boolean;
+  importance: number;
+};
+
+type LinkRow = { slug: string; title: string; start_year: number; end_year: number | null; is_approximate: boolean };
+
+const toLink = (r: LinkRow): EventLink => ({
+  slug: r.slug,
+  title: r.title,
+  startYear: r.start_year,
+  endYear: r.end_year,
+  isApproximate: r.is_approximate,
+});
+
+async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<EventPage | null> {
+  const [ev] = await tx<EventPageRow[]>`
+    select e.id, e.slug, coalesce(l.title, d.title) as title, coalesce(l.summary, d.summary) as summary,
+      coalesce(l.place_label, d.place_label) as place, coalesce(l.media_hint, d.media_hint) as media_hint,
+      case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
+      e.start_year, e.end_year, e.start_date, e.end_date, e.is_approximate, e.importance
+    from public.events e
+    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+    where e.slug = ${slug} and e.status = 'published'`;
+  if (!ev) return null;
+
+  const linkSelect = tx`
+    e.slug, coalesce(l.title, d.title) as title, e.start_year, e.end_year, e.is_approximate
+    from public.events e
+    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}`;
+
+  const [previous] = await tx<LinkRow[]>`
+    select ${linkSelect}
+    where e.status = 'published' and (e.start_year, e.importance, e.slug) < (${ev.start_year}, ${ev.importance}, ${ev.slug})
+    order by e.start_year desc, e.importance desc, e.slug desc limit 1`;
+  const [next] = await tx<LinkRow[]>`
+    select ${linkSelect}
+    where e.status = 'published' and (e.start_year, e.importance, e.slug) > (${ev.start_year}, ${ev.importance}, ${ev.slug})
+    order by e.start_year, e.importance, e.slug limit 1`;
+
+  const [era] = await tx<{ slug: string; name: string }[]>`
+    select r.slug, coalesce(l.name, d.name) as name
+    from public.eras r
+    join public.era_translations d on d.era_id = r.id and d.locale = ${SRC}
+    left join public.era_translations l on l.era_id = r.id and l.locale = ${locale}
+    where r.start_year <= ${ev.start_year} and (r.end_year is null or ${ev.start_year} < r.end_year)
+    order by r.start_year desc limit 1`;
+
+  const [hero] = await tx<ImageRow[]>`
+    select ${imageColumns(tx, locale)}
+    from public.event_images ei join public.images i on i.id = ei.image_id
+    where ei.event_id = ${ev.id} and ei.role = 'hero'`;
+
+  const story = await loadStory(tx, ev.id, locale);
+
+  return {
+    event: {
+      slug: ev.slug,
+      title: ev.title,
+      summary: ev.summary,
+      place: ev.place,
+      startYear: ev.start_year,
+      endYear: ev.end_year,
+      startDate: isoDate(ev.start_date),
+      endDate: isoDate(ev.end_date),
+      isApproximate: ev.is_approximate,
+      importance: asImportance(ev.importance),
+      mediaHint: ev.media_hint,
+      textLocale: asLocale(ev.text_locale),
+    },
+    era: era ?? null,
+    hero: hero ? toImage(hero, ev.media_hint ?? ev.title) : null,
+    story,
+    previous: previous ? toLink(previous) : null,
+    next: next ? toLink(next) : null,
+  };
+}
+
+async function loadStory(tx: Tx, eventId: string, locale: Locale): Promise<Story | null> {
+  // Prefer the visitor's language; fall back to the source language.
+  const [story] = await tx<
+    { id: string; locale: string; layout: "short" | "full"; dek: string | null; footnote: string | null }[]
+  >`
+    select s.id, s.locale, s.layout, s.dek, s.footnote
+    from public.stories s
+    where s.event_id = ${eventId} and s.locale in (${locale}, ${SRC})
+    order by (s.locale = ${locale}) desc
+    limit 1`;
+  if (!story) return null;
+
+  const storyLocale = asLocale(story.locale);
+  const [stats, keyDates, chapterRows, sideRows, people, related] = await Promise.all([
+    tx<{ value_label: string; description: string }[]>`
+      select value_label, description from public.story_stats where story_id = ${story.id} order by sort_order`,
+    tx<{ date: Date; label: string; chapter_order: number | null }[]>`
+      select date, label, chapter_order from public.story_key_dates where story_id = ${story.id} order by sort_order`,
+    tx<
+      (Partial<ImageRow> & {
+        sort_order: number;
+        title: string;
+        period_label: string;
+        paragraphs: string[];
+        figure_kind: "photo" | "map" | null;
+        figure_caption: string | null;
+        shows_sides: boolean;
+        has_image: boolean;
+      })[]
+    >`
+      select c.sort_order, c.title, c.period_label, c.paragraphs, c.figure_kind, c.figure_caption, c.shows_sides,
+        (i.id is not null) as has_image, ${imageColumns(tx, storyLocale)}
+      from public.story_chapters c left join public.images i on i.id = c.image_id
+      where c.story_id = ${story.id} order by c.sort_order`,
+    tx<{ name: string; members: { name: string; note: string | null }[] }[]>`
+      select s.name,
+        coalesce((select json_agg(json_build_object('name', m.name, 'note', m.note) order by m.sort_order)
+          from public.story_side_members m where m.side_id = s.id), '[]'::json) as members
+      from public.story_sides s where s.story_id = ${story.id} order by s.sort_order`,
+    tx<(Partial<ImageRow> & { name: string; description: string; initials: string; has_image: boolean })[]>`
+      select p.name, p.description, p.initials, (i.id is not null) as has_image, ${imageColumns(tx, storyLocale)}
+      from public.story_people p left join public.images i on i.id = p.image_id
+      where p.story_id = ${story.id} order by p.sort_order`,
+    tx<LinkRow[]>`
+      select e.slug, coalesce(l.title, d.title) as title, e.start_year, e.end_year, e.is_approximate
+      from public.story_related r
+      join public.events e on e.id = r.related_event_id
+      join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+      left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+      where r.story_id = ${story.id} and e.status = 'published'
+      order by r.sort_order`,
+  ]);
+
+  const chapters = chapterRows.map((c): StoryChapter => ({
+    order: c.sort_order,
+    title: c.title,
+    period: c.period_label,
+    paragraphs: c.paragraphs,
+    figure: c.figure_kind
+      ? {
+          kind: c.figure_kind,
+          caption: c.figure_caption ?? "",
+          image: c.has_image ? toImage(c as ImageRow, c.figure_caption ?? c.title) : null,
+        }
+      : null,
+    showsSides: c.shows_sides,
+  }));
+
+  return {
+    locale: storyLocale,
+    layout: story.layout,
+    dek: story.dek,
+    footnote: story.footnote,
+    stats: stats.map((s) => ({ value: s.value_label, description: s.description })),
+    keyDates: keyDates.map((d) => ({ date: isoDate(d.date)!, label: d.label, chapter: d.chapter_order })),
+    chapters,
+    sides: sideRows.map((s) => ({ name: s.name, members: s.members })),
+    people: people.map((p) => ({
+      name: p.name,
+      description: p.description,
+      initials: p.initials,
+      image: p.has_image ? toImage(p as ImageRow, p.name) : null,
+    })),
+    related: related.map(toLink),
+  };
+}
+
+export async function getEventPage(locale: Locale, slug: string): Promise<EventPage | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.event(slug));
+  return publicRead("event.load", (tx) => loadEventPage(tx, locale, slug), { locale, slug });
+}
+
+/** Slugs of all published events, for static generation and the sitemap. */
+export async function getPublishedEventSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline);
+  const rows = await publicRead(
+    "event.slugs",
+    (tx) => tx<{ slug: string; updated_at: Date }[]>`
+    select slug, updated_at from public.events where status = 'published' order by start_year, slug`,
+  );
+  return rows.map((r) => ({ slug: r.slug, updatedAt: r.updated_at.toISOString() }));
+}
