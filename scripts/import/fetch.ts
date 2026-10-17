@@ -2,6 +2,7 @@
  * The fetch stage: asks Wikidata, Wikipedia and Commons for everything the site
  * needs and returns a validated bundle. Network only; the shaping is in build.ts.
  */
+import type { z } from "zod";
 import { logger } from "@/lib/log/logger";
 import { SEED_ARTICLES } from "./config/seed-articles";
 import { TOPICS } from "./config/topics";
@@ -20,7 +21,7 @@ import {
 } from "./build";
 import { commonsTitle, getImages } from "./commons";
 import { chunk, type Http } from "./http";
-import { BundleSchema, type Bundle, type ImportEvent } from "./model";
+import { BundleSchema, EventSchema, PersonSchema, type Bundle, type ImportEvent } from "./model";
 import { claims, getEntities, itemId, label, sparql, type Entity } from "./wikidata";
 import { getLeads, resolveTitles } from "./wikipedia";
 
@@ -360,17 +361,32 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
   );
   const images = await getImages(http, imageNames);
 
-  // 5. Build records.
+  // 5. Build records. One record Wikidata got wrong must not stop the whole import:
+  // it is left out with a warning saying why.
+  const valid =
+    <T extends { wikidataId: string | null }>(kind: string, schema: z.ZodType<T>) =>
+    (r: T) => {
+      const check = schema.safeParse(r);
+      if (!check.success)
+        log.warn({ kind, wikidataId: r.wikidataId, issues: check.error.issues }, "invalid record left out");
+      return check.success;
+    };
   const ctx: BuildContext = { labels, leads, images, spans, sitelinks, seeds, currentYear, siteEvents: new Set() };
   const builtEvents = dedupeSlugs(
-    events.map((e) => buildEvent(e, ctx)).filter((x): x is ImportEvent => !!x),
+    events
+      .map((e) => buildEvent(e, ctx))
+      .filter((x): x is ImportEvent => !!x)
+      .filter(valid("event", EventSchema)),
     (r) => r.startYear,
     new Set(),
     (r) => r.seedSlug != null,
   );
   ctx.siteEvents = new Set(builtEvents.map((e) => e.wikidataId));
   const builtPeople = dedupeSlugs(
-    people.map((e) => buildPerson(e, ctx)).filter((x) => !!x),
+    people
+      .map((e) => buildPerson(e, ctx))
+      .filter((x) => !!x)
+      .filter(valid("person", PersonSchema)),
     (r) => r.birthYear,
   );
   const eventById = new Map(builtEvents.map((e) => [e.wikidataId, e]));

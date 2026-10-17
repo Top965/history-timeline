@@ -12,7 +12,7 @@ import {
   type BuildContext,
 } from "../../scripts/import/build";
 import { commonsTitle } from "../../scripts/import/commons";
-import { BundleSchema } from "../../scripts/import/model";
+import { BundleSchema, PersonSchema } from "../../scripts/import/model";
 import { parseTime, type Entity } from "../../scripts/import/wikidata";
 import { summarize, trimLead, type Lead } from "../../scripts/import/wikipedia";
 
@@ -208,6 +208,25 @@ describe("people", () => {
     expect(p.life.filter((l) => l.kind === "award").length).toBeLessThanOrEqual(12);
     const keys = p.life.map((l) => `${l.kind}|${l.wikidataId}|${l.startYear}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("leaves out facts dated in the future", () => {
+    const messi = structuredClone(people.Q615);
+    const team = messi.claims!.P54![0];
+    const typo = structuredClone(team);
+    typo.qualifiers = {
+      P580: [
+        {
+          snaktype: "value",
+          property: "P580",
+          datavalue: { type: "time", value: { time: "+20140-01-01T00:00:00Z", precision: 9 } },
+        },
+      ],
+    };
+    messi.claims!.P54 = [typo, ...messi.claims!.P54!];
+    const p = buildPerson(messi, context())!;
+    expect(p.life.every((l) => l.startYear <= 2026)).toBe(true);
+    expect(PersonSchema.safeParse(p).success).toBe(true);
   });
 
   it("skips people without an English article or a birth year", () => {

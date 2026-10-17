@@ -260,7 +260,10 @@ export function buildLife(e: Entity, ctx: BuildContext): LifeEvent[] {
         span = start ? { start, end: qualifierTime(c, "P582") } : null;
       }
       if (!span) continue;
-      if (span.end && span.end.year < span.start.year) span = { start: span.start, end: null };
+      // A fact dated in the future is a typo or a plan, not history: leave it out.
+      if (span.start.year > ctx.currentYear) continue;
+      if (span.end && (span.end.year < span.start.year || span.end.year > ctx.currentYear + 10))
+        span = { start: span.start, end: null };
       // Statements outside the person's lifetime are data errors (or posthumous honours we skip).
       if (birth && span.start.year < birth.year) continue;
       if (death && span.start.year > death.year) continue;
