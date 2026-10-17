@@ -194,7 +194,7 @@ describe.skipIf(!url)("database", () => {
       expect(tile.events.map((e) => e.slug)).toEqual(
         expect.arrayContaining(["ottoman-empire-ends", "united-nations-founded", "first-intifada"]),
       );
-      expect(tile.events.every((e) => e.importance === 3)).toBe(true);
+      expect(tile.events.every((e) => e.importance !== 1)).toBe(true);
       expect(tile.events.some((e) => e.slug === "oslo-accords")).toBe(true);
       expect(tile.events.some((e) => e.slug === "second-intifada")).toBe(false);
       // Events that started earlier but run into the tile come along.
@@ -202,6 +202,26 @@ describe.skipIf(!url)("database", () => {
       expect(next.events.map((e) => e.slug)).toEqual(expect.arrayContaining(["second-intifada"]));
       const level2 = await queries.getTimelineTile("ar", 2, 1);
       expect(level2.events.find((e) => e.slug === "russian-revolution")?.textLocale).toBe("ar");
+    });
+
+    it("keeps only the best known events in a crowded tile", async () => {
+      await sql!.begin(async (tx) => {
+        for (let i = 1; i <= 50; i++) {
+          const [e] = await tx`insert into events (slug, start_year, importance, status, published_at, sitelinks)
+            values (${`crowded-${i}`}, 1955, 3, 'published', now(), ${i}) returning id`;
+          await tx`insert into event_translations (event_id, locale, title, summary, place_label)
+            values (${e.id}, 'en', ${`Crowded ${i}`}, 'Test', 'Test')`;
+        }
+      });
+      try {
+        const tile = await queries.getTimelineTile("en", 4, 195);
+        const crowded = tile.events.filter((e) => e.slug.startsWith("crowded-"));
+        expect(tile.events).toHaveLength(40);
+        expect(crowded.map((e) => e.slug)).toContain("crowded-50");
+        expect(crowded.map((e) => e.slug)).not.toContain("crowded-1");
+      } finally {
+        await sql!`delete from events where slug like 'crowded-%'`;
+      }
     });
 
     it("loads everything search needs", async () => {

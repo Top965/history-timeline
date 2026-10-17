@@ -100,6 +100,14 @@ describe("layoutTrack", () => {
     expect(pins.filter((p) => p.lane < 0)).toHaveLength(1);
   });
 
+  it("draws one dot per spot however many events pile up there", () => {
+    const events = Array.from({ length: 200 }, (_, i) => ev(`e${i}`, 1950, i === 150 ? 2 : 3));
+    const { pins } = layoutTrack(events, { center: 1950, span: 100 }, 800, noEmphasis, () => 100);
+    const dots = pins.filter((p) => p.lane < 0);
+    expect(pins.filter((p) => p.lane >= 0).map((p) => p.event.slug)[0]).toBe("e150");
+    expect(dots).toHaveLength(1);
+  });
+
   it("gives highlighted events first pick of the lanes", () => {
     const events = [ev("a", 1900), ev("b", 1901), ev("c", 1902), ev("hl", 1903, 3)];
     const { pins } = layoutTrack(

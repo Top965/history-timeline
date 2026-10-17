@@ -70,7 +70,7 @@ export type SearchData = {
 };
 
 /** Smaller events for one stretch of time, loaded as the visitor zooms in. */
-export type TimelineTile = { level: 2 | 3; tile: number; events: TimelineEvent[] };
+export type TimelineTile = { level: 2 | 3 | 4 | 5; tile: number; events: TimelineEvent[] };
 
 /** Where imported text comes from; shown as a credit next to it (CC BY-SA). */
 export type TextSource = { url: string; title: string; license: string | null };

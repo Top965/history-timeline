@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineEvent, TimelineTile } from "@/lib/content/types";
 import type { Locale } from "@/lib/i18n/config";
 import type { View } from "@/lib/timeline/geometry";
-import { tileKey, tilesForView } from "@/lib/timeline/tiles";
+import { activeLevels, tileKey, tilesForView } from "@/lib/timeline/tiles";
 
 /** Wait for the view to settle a moment before asking for tiles, so a fling doesn't fetch every tile it passes. */
 const SETTLE_MS = 150;
@@ -12,6 +12,7 @@ const SETTLE_MS = 150;
 /**
  * Loads the smaller events for the stretch of time on screen, tile by tile,
  * and keeps every tile it has loaded (they are small and the visitor may come back).
+ * Returns the events of the tiles that show at the current zoom.
  */
 export function useTiles(
   locale: Locale,
@@ -55,9 +56,14 @@ export function useTiles(
     };
   }, [locale, wantedKey]);
 
+  const levels = activeLevels(view.span).join(",");
   return useMemo(() => {
+    const active = new Set(levels.split(","));
     const seen = new Map<string, TimelineEvent>();
-    for (const events of tiles.values()) for (const e of events) seen.set(e.slug, e);
+    for (const [key, events] of tiles) {
+      if (!active.has(key.split(":")[0])) continue;
+      for (const e of events) seen.set(e.slug, e);
+    }
     return [...seen.values()];
-  }, [tiles]);
+  }, [tiles, levels]);
 }

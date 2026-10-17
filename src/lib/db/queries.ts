@@ -21,7 +21,7 @@ import type {
   TopicPage,
 } from "@/lib/content/types";
 import { CONTENT_SOURCE_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
-import { tileRange, type TileLevel } from "@/lib/timeline/tiles";
+import { TILE_LIMIT, tileRange, type TileLevel } from "@/lib/timeline/tiles";
 import { publicRead, type Tx } from "./client";
 
 /** Cache tags, so later steps (admin approval) can revalidate exactly what changed. */
@@ -109,12 +109,15 @@ async function loadEras(tx: Tx, locale: Locale): Promise<Era[]> {
 }
 
 type EventFilter = {
-  importance?: 1 | 2 | 3;
+  /** Only events of these importances. */
+  importance?: (1 | 2 | 3)[];
   /** Events overlapping [from, to]. */
   from?: number;
   to?: number;
   /** Search keywords; the browser never needs them. */
   keywords: boolean;
+  /** Keep only the best known: hand-written first, then by Wikipedia language count. */
+  limit?: number;
 };
 
 async function loadEvents(tx: Tx, locale: Locale, f: EventFilter): Promise<TimelineEvent[]> {
@@ -131,10 +134,14 @@ async function loadEvents(tx: Tx, locale: Locale, f: EventFilter): Promise<Timel
     join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
     left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
     where e.status = 'published'
-      and (${f.importance ?? null}::int is null or e.importance = ${f.importance ?? null}::int)
+      and (${f.importance ?? null}::int[] is null or e.importance = any(${f.importance ?? null}::int[]))
       and (${f.to ?? null}::int is null or e.start_year <= ${f.to ?? null}::int)
       and (${f.from ?? null}::int is null or coalesce(e.end_year, e.start_year) >= ${f.from ?? null}::int)
-    order by e.start_year, e.importance, e.slug`;
+    order by
+      case when ${f.limit ?? null}::int is null then null else e.importance end,
+      case when ${f.limit ?? null}::int is null then null else coalesce(e.sitelinks, 100000) end desc,
+      e.start_year, e.importance, e.slug
+    limit ${f.limit ?? null}::int`;
   return rows.map((r): TimelineEvent => ({
     slug: r.slug,
     title: r.title,
@@ -210,7 +217,7 @@ export async function getTimelineData(locale: Locale): Promise<TimelineData> {
     "timeline.load",
     async (tx) => ({
       eras: await loadEras(tx, locale),
-      events: await loadEvents(tx, locale, { importance: 1, keywords: false }),
+      events: await loadEvents(tx, locale, { importance: [1], keywords: false }),
     }),
     { locale },
   );
@@ -225,7 +232,8 @@ export async function getTimelineTile(locale: Locale, level: TileLevel, tile: nu
   const { from, to } = tileRange(level, tile);
   const events = await publicRead(
     "timeline.tile",
-    (tx) => loadEvents(tx, locale, { importance: level, from, to, keywords: false }),
+    (tx) =>
+      loadEvents(tx, locale, { importance: level === 2 ? [2] : [2, 3], from, to, keywords: false, limit: TILE_LIMIT }),
     { locale, level, tile },
   );
   return { level, tile, events };

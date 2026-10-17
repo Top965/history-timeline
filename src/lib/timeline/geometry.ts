@@ -102,6 +102,8 @@ export function showsAtZoom(e: TrackEvent, span: number, emphasis: Emphasis): bo
 }
 
 export const LANE_TOPS = [34, 74, 114] as const;
+/** Pixels between dots on the axis, for events with no room for a label. */
+const DOT_SPACING = 6;
 export const AXIS_TOP = 178;
 const PIN_OFFSET = 12;
 const PIN_GAP = 6;
@@ -142,6 +144,7 @@ export function layoutTrack<E extends TrackEvent>(
 
   const pins: PlacedPin<E>[] = [];
   const taken: { lane: number; left: number; right: number }[] = [];
+  const dotSpots = new Set<number>();
   for (const e of ordered) {
     const x = yearToX(e.startYear, view, width);
     const left = x - PIN_OFFSET;
@@ -154,6 +157,10 @@ export function layoutTrack<E extends TrackEvent>(
       }
     }
     if (lane < 0) {
+      // Dots on top of each other add nothing but weight: keep the most important one per spot.
+      const spot = Math.round(x / DOT_SPACING);
+      if (dotSpots.has(spot)) continue;
+      dotSpots.add(spot);
       pins.push({ event: e, x, lane: -1 });
     } else {
       taken.push({ lane, left, right });
