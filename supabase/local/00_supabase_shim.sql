@@ -31,3 +31,9 @@ as $$
 $$;
 
 grant execute on function auth.uid() to anon, authenticated, service_role;
+
+-- Like hosted Supabase: new tables and functions in public are fully granted to the API roles,
+-- so the migrations have to take back what the public should not have.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
