@@ -110,6 +110,42 @@ test.describe("timeline", () => {
     await expect(timeline(page).getByRole("button", { name: /Apollo 11 Moon landing/ })).toHaveClass(/pin-pulse/);
   });
 
+  test("loads smaller events when zooming into another period", async ({ page }) => {
+    await page.goto("/en#year=-1332&span=120");
+    await expect(readout(page)).toHaveText("1,332 BCE");
+    // Tutankhamun is a smaller event, so it only arrives with that period's events.
+    await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toBeVisible();
+  });
+
+  test("finds and highlights a smaller event far from the opening view", async ({ page }) => {
+    await page.goto("/en");
+    await search(page, "tutankhamun");
+    await page.getByRole("option", { name: /Tutankhamun becomes pharaoh/ }).click();
+    await expect(readout(page)).toHaveText("1,332 BCE");
+    await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toHaveClass(/pin-pulse/);
+  });
+
+  test("looks up someone who isn't on the site yet and opens their page", async ({ page }) => {
+    // Wikipedia isn't reachable from tests, so answer the two lookup calls here.
+    await page.route("**/api/people/lookup?*", (route) =>
+      route.fulfill({
+        json: { candidates: [{ wikidataId: "Q615", name: "Lionel Messi", description: "Argentine footballer" }] },
+      }),
+    );
+    let posted: unknown = null;
+    await page.route("**/api/people", (route) => {
+      posted = route.request().postDataJSON();
+      return route.fulfill({ json: { slug: "lionel-messi", created: true } });
+    });
+    await page.goto("/en");
+    await search(page, "messi");
+    await page.getByRole("button", { name: "Looking for someone else? Find “messi” on Wikipedia" }).click();
+    await expect(page.getByTestId("person-lookup")).toContainText("Argentine footballer");
+    await page.getByRole("button", { name: "Add: Lionel Messi" }).click();
+    await expect(page).toHaveURL(/\/en\/people\/lionel-messi$/);
+    expect(posted).toEqual({ wikidataId: "Q615" });
+  });
+
   test("has no serious accessibility problems", async ({ page }) => {
     await page.goto("/en");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

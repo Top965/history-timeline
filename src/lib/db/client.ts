@@ -55,6 +55,18 @@ export async function publicRead<T>(
   );
 }
 
+/**
+ * The few server-side writes (people added from search), as the connection's own
+ * role. Keep every caller small and validated: this bypasses Row Level Security.
+ */
+export async function serverWrite<T>(
+  operation: string,
+  fn: (sql: postgres.Sql) => Promise<T>,
+  meta?: Record<string, unknown>,
+): Promise<T> {
+  return logExternalCall({ service: "database", operation, target: databaseHost(), meta }, () => fn(client()));
+}
+
 /** Lightweight connectivity check used by /api/health. */
 export async function pingDatabase(requestId: string): Promise<void> {
   await logExternalCall(

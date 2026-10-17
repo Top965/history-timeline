@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
+import type { DataNote } from "@/lib/people/notes";
 
 /** Shapes the website renders. Produced by src/lib/db/queries.ts, serializable for client components. */
 
@@ -49,13 +50,28 @@ export type PersonSummary = {
   keywords: string[];
 };
 
+/**
+ * What a timeline page ships to the browser: the eras and the biggest events
+ * (importance 1). Smaller events load by period as the visitor zooms in
+ * (see `TimelineTile`), and search runs on the server over `SearchData`.
+ */
 export type TimelineData = {
+  currentYear: number;
+  eras: Era[];
+  events: TimelineEvent[];
+};
+
+/** Everything search looks through. Built on the server only. */
+export type SearchData = {
   currentYear: number;
   eras: Era[];
   events: TimelineEvent[];
   topics: Topic[];
   people: PersonSummary[];
 };
+
+/** Smaller events for one stretch of time, loaded as the visitor zooms in. */
+export type TimelineTile = { level: 2 | 3 | 4 | 5; tile: number; events: TimelineEvent[] };
 
 /** Where imported text comes from; shown as a credit next to it (CC BY-SA). */
 export type TextSource = { url: string; title: string; license: string | null };
@@ -101,6 +117,12 @@ export type PersonPage = {
     deathDate: string | null;
     birthPlace: string | null;
     deathPlace: string | null;
+    /** The Wikidata entry the facts and dates come from. */
+    wikidataId: string | null;
+    /** Added automatically when a visitor searched for them, and not reviewed yet. */
+    addedFromSearch: boolean;
+    /** What is missing or disputed in the data, so the page can say so. */
+    notes: DataNote[];
   };
   source: TextSource | null;
   life: LifeItem[];

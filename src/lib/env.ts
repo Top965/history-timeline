@@ -5,7 +5,8 @@ const serverEnvSchema = z.object({
   /**
    * Postgres connection string for the Supabase database. Use the pooled
    * "Transaction" connection string (port 6543) on Vercel, with ?sslmode=require.
-   * The app only ever reads, inside read-only transactions running as the `anon` role.
+   * Pages read inside read-only transactions running as the `anon` role; the only
+   * writes are people added from search (src/lib/people/lookup.ts).
    */
   DATABASE_URL: z
     .string()

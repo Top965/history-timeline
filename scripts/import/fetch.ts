@@ -2,6 +2,7 @@
  * The fetch stage: asks Wikidata, Wikipedia and Commons for everything the site
  * needs and returns a validated bundle. Network only; the shaping is in build.ts.
  */
+import type { z } from "zod";
 import { logger } from "@/lib/log/logger";
 import { SEED_ARTICLES } from "./config/seed-articles";
 import { TOPICS } from "./config/topics";
@@ -20,7 +21,7 @@ import {
 } from "./build";
 import { commonsTitle, getImages } from "./commons";
 import { chunk, type Http } from "./http";
-import { BundleSchema, type Bundle, type ImportEvent } from "./model";
+import { BundleSchema, EventSchema, PersonSchema, type Bundle, type ImportEvent } from "./model";
 import { claims, getEntities, itemId, label, sparql, type Entity } from "./wikidata";
 import { getLeads, resolveTitles } from "./wikipedia";
 
@@ -38,10 +39,10 @@ export type FetchLimits = {
 };
 
 export const DEFAULT_LIMITS: FetchLimits = {
-  events: 2000,
-  eventMinSitelinks: 25,
-  people: 1000,
-  personMinSitelinks: 80,
+  events: 10_000,
+  eventMinSitelinks: 12,
+  people: 10_000,
+  personMinSitelinks: 35,
   autoTopicEvents: 40,
 };
 
@@ -78,7 +79,7 @@ const EVENT_CLASSES = [
 ];
 
 /** The only statements build.ts reads; the rest are dropped right away to keep memory small. */
-const USED_CLAIMS = [
+export const USED_CLAIMS = [
   "P31",
   "P18",
   "P585",
@@ -114,17 +115,21 @@ const NOT_EVENTS = new Set([
 
 const ids = (rows: Record<string, string>[], key: string) => rows.map((r) => r[key]).filter((x) => /^Q\d+$/.test(x));
 
+/** One query per class: a single query over every class times out at this size. */
 async function eventCandidates(http: Http, limits: FetchLimits): Promise<Map<string, number>> {
-  const rows = await sparql(
-    http,
-    `SELECT ?e (MAX(?n) AS ?sl) WHERE {
-       VALUES ?cls { ${EVENT_CLASSES.map((c) => `wd:${c}`).join(" ")} }
-       ?e wdt:P31 ?cls ; wikibase:sitelinks ?n .
-       FILTER(?n >= ${limits.eventMinSitelinks})
-     } GROUP BY ?e ORDER BY DESC(?sl) LIMIT ${limits.events}`,
-    "wikidata.sparql.events",
+  const all = new Map<string, number>();
+  const perClass = await Promise.all(
+    EVENT_CLASSES.map((cls) =>
+      sparql(
+        http,
+        `SELECT ?e ?sl WHERE { ?e wdt:P31 wd:${cls} ; wikibase:sitelinks ?sl . FILTER(?sl >= ${limits.eventMinSitelinks}) }
+         ORDER BY DESC(?sl) LIMIT ${limits.events}`,
+        `wikidata.sparql.events.${cls}`,
+      ),
+    ),
   );
-  return new Map(rows.map((r) => [r.e, Number(r.sl)]));
+  for (const rows of perClass) for (const r of rows) all.set(r.e, Math.max(all.get(r.e) ?? 0, Number(r.sl)));
+  return new Map([...all].sort((a, b) => b[1] - a[1]).slice(0, limits.events));
 }
 
 /**
@@ -165,6 +170,18 @@ const OCCUPATIONS = [
   "Q42603", // priest
   "Q1423891", // religious leader
   "Q1622272", // university teacher
+  "Q15253558", // activist
+  "Q1930187", // journalist
+  "Q40348", // lawyer
+  "Q16533", // judge
+  "Q42973", // architect
+  "Q11631", // astronaut
+  "Q12299841", // cricketer
+  "Q10873124", // chess player
+  "Q10843402", // swimmer
+  "Q1999841", // Islamic scholar
+  "Q82594", // computer scientist
+  "Q188094", // economist
 ];
 
 async function peopleCandidates(http: Http, limits: FetchLimits): Promise<Map<string, number>> {
@@ -196,7 +213,7 @@ async function topicParts(http: Http, topicId: string, limit: number): Promise<s
 }
 
 /** Sitelink counts for items found some other way (config titles). */
-async function sitelinkCounts(http: Http, qids: string[]): Promise<Map<string, number>> {
+export async function sitelinkCounts(http: Http, qids: string[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();
   for (const batch of chunk(qids, 300)) {
     const rows = await sparql(
@@ -213,7 +230,7 @@ async function sitelinkCounts(http: Http, qids: string[]): Promise<Map<string, n
  * Start and end years of wars and events people took part in. WDQS returns
  * XSD dates where year 0 is 1 BCE, so years at or below zero shift by one.
  */
-async function yearSpans(http: Http, qids: string[]): Promise<Map<string, Span>> {
+export async function yearSpans(http: Http, qids: string[]): Promise<Map<string, Span>> {
   const out = new Map<string, Span>();
   const year = (v: string | undefined) => {
     const m = v?.match(/^(-?)(\d+)-/);
@@ -244,14 +261,14 @@ async function yearSpans(http: Http, qids: string[]): Promise<Map<string, Span>>
   return out;
 }
 
-async function labelsFor(http: Http, qids: string[]): Promise<Labels> {
+export async function labelsFor(http: Http, qids: string[]): Promise<Labels> {
   const entities = await getEntities(http, qids, ["labels"]);
   const out: Labels = new Map();
   for (const [id, e] of entities) out.set(id, { en: label(e, "en"), ar: label(e, "ar") });
   return out;
 }
 
-async function leadsFor(http: Http, entities: Entity[]): Promise<BuildContext["leads"]> {
+export async function leadsFor(http: Http, entities: Entity[]): Promise<BuildContext["leads"]> {
   const en = entities.map((e) => e.sitelinks?.enwiki?.title).filter((t): t is string => !!t);
   const ar = entities.map((e) => e.sitelinks?.arwiki?.title).filter((t): t is string => !!t);
   const [enLeads, arLeads] = await Promise.all([getLeads(http, "en", en), getLeads(http, "ar", ar)]);
@@ -344,17 +361,32 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
   );
   const images = await getImages(http, imageNames);
 
-  // 5. Build records.
+  // 5. Build records. One record Wikidata got wrong must not stop the whole import:
+  // it is left out with a warning saying why.
+  const valid =
+    <T extends { wikidataId: string | null }>(kind: string, schema: z.ZodType<T>) =>
+    (r: T) => {
+      const check = schema.safeParse(r);
+      if (!check.success)
+        log.warn({ kind, wikidataId: r.wikidataId, issues: check.error.issues }, "invalid record left out");
+      return check.success;
+    };
   const ctx: BuildContext = { labels, leads, images, spans, sitelinks, seeds, currentYear, siteEvents: new Set() };
   const builtEvents = dedupeSlugs(
-    events.map((e) => buildEvent(e, ctx)).filter((x): x is ImportEvent => !!x),
+    events
+      .map((e) => buildEvent(e, ctx))
+      .filter((x): x is ImportEvent => !!x)
+      .filter(valid("event", EventSchema)),
     (r) => r.startYear,
     new Set(),
     (r) => r.seedSlug != null,
   );
   ctx.siteEvents = new Set(builtEvents.map((e) => e.wikidataId));
   const builtPeople = dedupeSlugs(
-    people.map((e) => buildPerson(e, ctx)).filter((x) => !!x),
+    people
+      .map((e) => buildPerson(e, ctx))
+      .filter((x) => !!x)
+      .filter(valid("person", PersonSchema)),
     (r) => r.birthYear,
   );
   const eventById = new Map(builtEvents.map((e) => [e.wikidataId, e]));

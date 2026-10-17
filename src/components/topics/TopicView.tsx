@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { TimelineData, TopicPage } from "@/lib/content/types";
+import type { TimelineData, TimelineEvent, TopicPage } from "@/lib/content/types";
 import { formatEventYears, formatRange } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
@@ -14,7 +14,8 @@ export function TopicView({ locale, page, data }: { locale: Locale; page: TopicP
   const { topic } = page;
   const end = topic.endYear ?? data.currentYear;
   const own = new Set(topic.eventSlugs);
-  const events = data.events.filter((e) => own.has(e.slug));
+  // The page carries every event of the topic; the shared timeline data only the biggest.
+  const events: TimelineEvent[] = page.events.map((e) => ({ ...e, keywords: [] }));
   const context = data.events.filter(
     (e) => e.importance === 1 && !own.has(e.slug) && e.startYear >= topic.startYear && e.startYear <= end,
   );

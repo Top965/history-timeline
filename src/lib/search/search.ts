@@ -1,11 +1,12 @@
-import type { Era, PersonSummary, TimelineData, TimelineEvent, Topic } from "@/lib/content/types";
+import type { Era, PersonSummary, SearchData, TimelineEvent, Topic } from "@/lib/content/types";
 import { STOP_WORDS, toAsciiDigits, wordScore, words } from "./text";
 import { MIN_YEAR } from "@/lib/timeline/geometry";
 
 /**
  * Keyword search with typo tolerance over years, eras, topics, people and events.
- * Runs in the browser over data the page already has. Step 4 replaces the
- * scoring with meaning-based search behind the same `search()` signature.
+ * Runs on the server (src/lib/search/server.ts) over everything on the site;
+ * the browser asks /api/search. Step 4 replaces the scoring with meaning-based
+ * search behind the same `search()` signature.
  */
 
 export type SearchResult =
@@ -25,7 +26,7 @@ export type SearchIndex = { entries: Entry[]; currentYear: number };
 
 const bag = (...parts: (string | string[])[]) => new Set(words(parts.flat().join(" ")));
 
-export function buildSearchIndex(data: TimelineData): SearchIndex {
+export function buildSearchIndex(data: SearchData): SearchIndex {
   const entries: Entry[] = [
     ...data.topics.map((t): Entry => ({
       type: "topic",

@@ -9,16 +9,20 @@ import type {
   PersonCard,
   PersonPage,
   PersonSummary,
+  SearchData,
   Story,
   StoryChapter,
   TextSource,
   TimelineData,
   TimelineEvent,
+  TimelineTile,
   Topic,
   TopicLink,
   TopicPage,
 } from "@/lib/content/types";
 import { CONTENT_SOURCE_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import { isDataNote } from "@/lib/people/notes";
+import { TILE_LIMIT, tileRange, type TileLevel } from "@/lib/timeline/tiles";
 import { publicRead, type Tx } from "./client";
 
 /** Cache tags, so later steps (admin approval) can revalidate exactly what changed. */
@@ -27,6 +31,7 @@ export const CACHE_TAGS = {
   event: (slug: string) => `event:${slug}`,
   person: (slug: string) => `person:${slug}`,
   topic: (slug: string) => `topic:${slug}`,
+  search: "search",
 } as const;
 
 const SRC = CONTENT_SOURCE_LOCALE;
@@ -85,8 +90,8 @@ type PersonRow = {
   keywords: string[];
 };
 
-async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, "currentYear">> {
-  const eras = await tx<EraRow[]>`
+async function loadEras(tx: Tx, locale: Locale): Promise<Era[]> {
+  const rows = await tx<EraRow[]>`
     select e.slug, coalesce(l.name, d.name) as name, e.start_year, e.end_year, e.color_token,
       (select coalesce(array_agg(distinct k), '{}') from public.era_translations t, unnest(t.keywords || t.name) k
         where t.era_id = e.id) as keywords
@@ -94,21 +99,66 @@ async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, 
     join public.era_translations d on d.era_id = e.id and d.locale = ${SRC}
     left join public.era_translations l on l.era_id = e.id and l.locale = ${locale}
     order by e.sort_order`;
+  return rows.map((r): Era => ({
+    slug: r.slug,
+    name: r.name,
+    startYear: r.start_year,
+    endYear: r.end_year,
+    colorToken: r.color_token,
+    keywords: r.keywords,
+  }));
+}
 
-  const events = await tx<EventRow[]>`
+type EventFilter = {
+  /** Only events of these importances. */
+  importance?: (1 | 2 | 3)[];
+  /** Events overlapping [from, to]. */
+  from?: number;
+  to?: number;
+  /** Search keywords; the browser never needs them. */
+  keywords: boolean;
+  /** Keep only the best known: hand-written first, then by Wikipedia language count. */
+  limit?: number;
+};
+
+async function loadEvents(tx: Tx, locale: Locale, f: EventFilter): Promise<TimelineEvent[]> {
+  const rows = await tx<EventRow[]>`
     select e.slug, coalesce(l.title, d.title) as title, coalesce(l.place_label, d.place_label) as place,
       e.start_year, e.end_year, e.is_approximate, e.importance,
       exists (select 1 from public.stories s where s.event_id = e.id and s.layout = 'full') as has_full_story,
       case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
-      (select coalesce(array_agg(distinct k), '{}') from public.event_translations t, unnest(t.keywords) k
-        where t.event_id = e.id) as keywords
+      case when ${f.keywords}::boolean then
+        (select coalesce(array_agg(distinct k), '{}') from public.event_translations t, unnest(t.keywords) k
+          where t.event_id = e.id)
+      else '{}' end as keywords
     from public.events e
     join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
     left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
     where e.status = 'published'
-    order by e.start_year, e.importance, e.slug`;
+      and (${f.importance ?? null}::int[] is null or e.importance = any(${f.importance ?? null}::int[]))
+      and (${f.to ?? null}::int is null or e.start_year <= ${f.to ?? null}::int)
+      and (${f.from ?? null}::int is null or coalesce(e.end_year, e.start_year) >= ${f.from ?? null}::int)
+    order by
+      case when ${f.limit ?? null}::int is null then null else e.importance end,
+      case when ${f.limit ?? null}::int is null then null else coalesce(e.sitelinks, 100000) end desc,
+      e.start_year, e.importance, e.slug
+    limit ${f.limit ?? null}::int`;
+  return rows.map((r): TimelineEvent => ({
+    slug: r.slug,
+    title: r.title,
+    place: r.place,
+    startYear: r.start_year,
+    endYear: r.end_year,
+    isApproximate: r.is_approximate,
+    importance: asImportance(r.importance),
+    hasFullStory: r.has_full_story,
+    textLocale: asLocale(r.text_locale),
+    keywords: r.keywords,
+  }));
+}
 
-  const topics = await tx<TopicRow[]>`
+async function loadTopics(tx: Tx, locale: Locale): Promise<Topic[]> {
+  const rows = await tx<TopicRow[]>`
     select t.slug, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
       case when l.summary is null then ${SRC} else ${locale} end as summary_locale,
       t.start_year, t.end_year, t.is_approximate,
@@ -122,8 +172,21 @@ async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, 
     left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
     where t.status = 'published'
     order by t.start_year, t.slug`;
+  return rows.map((r): Topic => ({
+    slug: r.slug,
+    name: r.name,
+    summary: r.summary ?? "",
+    summaryLocale: asLocale(r.summary_locale),
+    startYear: r.start_year,
+    endYear: r.end_year,
+    isApproximate: r.is_approximate,
+    eventSlugs: r.event_slugs,
+    keywords: r.keywords,
+  }));
+}
 
-  const people = await tx<PersonRow[]>`
+async function loadPeople(tx: Tx, locale: Locale): Promise<PersonSummary[]> {
+  const rows = await tx<PersonRow[]>`
     select p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
       p.birth_year, p.death_year, p.is_approximate,
       case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
@@ -134,58 +197,64 @@ async function loadTimeline(tx: Tx, locale: Locale): Promise<Omit<TimelineData, 
     left join public.person_translations l on l.person_id = p.id and l.locale = ${locale}
     where p.status = 'published'
     order by p.sitelinks desc nulls last, p.slug`;
-
-  return {
-    people: people.map((r): PersonSummary => ({
-      slug: r.slug,
-      name: r.name,
-      description: r.description,
-      birthYear: r.birth_year,
-      deathYear: r.death_year,
-      isApproximate: r.is_approximate,
-      textLocale: asLocale(r.text_locale),
-      keywords: r.keywords,
-    })),
-    eras: eras.map((r): Era => ({
-      slug: r.slug,
-      name: r.name,
-      startYear: r.start_year,
-      endYear: r.end_year,
-      colorToken: r.color_token,
-      keywords: r.keywords,
-    })),
-    events: events.map((r): TimelineEvent => ({
-      slug: r.slug,
-      title: r.title,
-      place: r.place,
-      startYear: r.start_year,
-      endYear: r.end_year,
-      isApproximate: r.is_approximate,
-      importance: asImportance(r.importance),
-      hasFullStory: r.has_full_story,
-      textLocale: asLocale(r.text_locale),
-      keywords: r.keywords,
-    })),
-    topics: topics.map((r): Topic => ({
-      slug: r.slug,
-      name: r.name,
-      summary: r.summary ?? "",
-      summaryLocale: asLocale(r.summary_locale),
-      startYear: r.start_year,
-      endYear: r.end_year,
-      isApproximate: r.is_approximate,
-      eventSlugs: r.event_slugs,
-      keywords: r.keywords,
-    })),
-  };
+  return rows.map((r): PersonSummary => ({
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    birthYear: r.birth_year,
+    deathYear: r.death_year,
+    isApproximate: r.is_approximate,
+    textLocale: asLocale(r.text_locale),
+    keywords: r.keywords,
+  }));
 }
 
-/** Everything the timeline page needs, cached and shared by all visitors. */
+/** What every timeline page ships: eras and the biggest events. Cached and shared by all visitors. */
 export async function getTimelineData(locale: Locale): Promise<TimelineData> {
   "use cache";
   cacheLife("hours");
   cacheTag(CACHE_TAGS.timeline);
-  const data = await publicRead("timeline.load", (tx) => loadTimeline(tx, locale), { locale });
+  const data = await publicRead(
+    "timeline.load",
+    async (tx) => ({
+      eras: await loadEras(tx, locale),
+      events: await loadEvents(tx, locale, { importance: [1], keywords: false }),
+    }),
+    { locale },
+  );
+  return { ...data, currentYear: new Date().getUTCFullYear() };
+}
+
+/** Smaller events for one stretch of time (see src/lib/timeline/tiles.ts). */
+export async function getTimelineTile(locale: Locale, level: TileLevel, tile: number): Promise<TimelineTile> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline);
+  const { from, to } = tileRange(level, tile);
+  const events = await publicRead(
+    "timeline.tile",
+    (tx) =>
+      loadEvents(tx, locale, { importance: level === 2 ? [2] : [2, 3], from, to, keywords: false, limit: TILE_LIMIT }),
+    { locale, level, tile },
+  );
+  return { level, tile, events };
+}
+
+/** Everything search looks through, for the server-side search index. */
+export async function getSearchData(locale: Locale): Promise<SearchData> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAGS.timeline, CACHE_TAGS.search);
+  const data = await publicRead(
+    "search.load",
+    async (tx) => ({
+      eras: await loadEras(tx, locale),
+      events: await loadEvents(tx, locale, { keywords: true }),
+      topics: await loadTopics(tx, locale),
+      people: await loadPeople(tx, locale),
+    }),
+    { locale },
+  );
   return { ...data, currentYear: new Date().getUTCFullYear() };
 }
 
@@ -544,9 +613,12 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
       birth_place: string | null;
       death_place: string | null;
       bio_locale: string;
+      wikidata_id: string | null;
+      added_via: string;
+      data_notes: string[];
     })[]
   >`
-    select p.id, p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
+    select p.id, p.slug, p.wikidata_id, p.added_via::text, p.data_notes, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
       p.birth_year, p.death_year, p.birth_date, p.death_date, p.is_approximate,
       case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
       coalesce(l.biography, d.biography) as biography,
@@ -617,6 +689,9 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
       deathDate: isoDate(p.death_date),
       birthPlace: p.birth_place,
       deathPlace: p.death_place,
+      wikidataId: p.wikidata_id,
+      addedFromSearch: p.added_via === "search",
+      notes: p.data_notes.filter(isDataNote),
     },
     source: source ? toSource(source) : null,
     life: life.map((r) => ({

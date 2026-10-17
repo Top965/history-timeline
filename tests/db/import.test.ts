@@ -181,13 +181,13 @@ describe.skipIf(!url)("importer load", () => {
     expect(page.people.map((p) => p.slug)).toEqual(["saddam-hussein"]);
   });
 
-  it("puts people in the timeline data for search", async () => {
-    const data = await queries.getTimelineData("ar");
+  it("makes people searchable", async () => {
+    const data = await queries.getSearchData("ar");
     expect(data.people).toContainEqual(
       expect.objectContaining({ slug: "saddam-hussein", name: "صدام حسين", textLocale: "ar" }),
     );
-    const { buildSearchIndex, search } = await import("@/lib/search/search");
-    const [first] = search(buildSearchIndex(await queries.getTimelineData("en")), "saddam husein");
+    const { searchSite } = await import("@/lib/search/server");
+    const [first] = await searchSite("en", "saddam husein");
     expect(first).toMatchObject({ type: "person", person: { slug: "saddam-hussein" } });
   });
 

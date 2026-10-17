@@ -3,6 +3,7 @@
  * to load. It is plain JSON so a run can be saved, reviewed and loaded later.
  */
 import { z } from "zod";
+import { DATA_NOTES } from "./checks";
 
 const year = z
   .number()
@@ -93,6 +94,8 @@ export const PersonSchema = z.object({
   image: z.string().nullable(),
   text: z.object({ en: PersonTextSchema, ar: PersonTextSchema.nullable() }),
   life: z.array(LifeEventSchema),
+  /** Gaps and disagreements in the data, shown on the page (older bundles have none). */
+  notes: z.array(z.enum(DATA_NOTES)).default([]),
 });
 
 export const TopicTextSchema = z.object({
