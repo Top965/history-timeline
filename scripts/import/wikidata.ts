@@ -62,8 +62,12 @@ export function parseTime(v: TimeValue | undefined | null): WdDate | null {
   if (!m) return null;
   const year = Number(m[2]) * (m[1] === "-" ? -1 : 1);
   if (year === 0 || !Number.isFinite(year) || Math.abs(year) > 100000) return null;
-  const date =
-    v.precision >= 11 && year > 0 && year < 10000 ? `${m[2].padStart(4, "0").slice(-4)}-${m[3]}-${m[4]}` : null;
+  // Exact days only for real Gregorian dates: Julian-calendar dates and impossible days (April 31) keep just the year.
+  const julian = v.calendarmodel?.endsWith("/Q1985786") ?? false;
+  const iso = `${m[2].padStart(4, "0").slice(-4)}-${m[3]}-${m[4]}`;
+  const real =
+    !Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) && new Date(`${iso}T00:00:00Z`).toISOString().startsWith(iso);
+  const date = v.precision >= 11 && year > 0 && year < 10000 && !julian && real ? iso : null;
   return { year, date, approximate: v.precision < 9 };
 }
 

@@ -136,6 +136,13 @@ describe("wikidata dates", () => {
     });
     expect(parseTime({ time: "+1500-00-00T00:00:00Z", precision: 7 })).toMatchObject({ year: 1500, approximate: true });
     expect(parseTime({ time: "+0000-00-00T00:00:00Z", precision: 9 })).toBeNull();
+    expect(parseTime({ time: "+1904-04-31T00:00:00Z", precision: 11 })?.date).toBeNull();
+    const julian = "http://www.wikidata.org/entity/Q1985786";
+    expect(parseTime({ time: "+1453-05-29T00:00:00Z", precision: 11, calendarmodel: julian })).toEqual({
+      year: 1453,
+      date: null,
+      approximate: false,
+    });
   });
 });
 
