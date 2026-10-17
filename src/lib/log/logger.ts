@@ -81,8 +81,9 @@ export async function loggedFetch(
     async () => {
       const res = await fetch(u, init);
       if (!res.ok) {
-        const err = new Error(`HTTP ${res.status} from ${u.host}`) as Error & { status: number };
+        const err = new Error(`HTTP ${res.status} from ${u.host}`) as Error & { status: number; retryAfter?: string };
         err.status = res.status;
+        err.retryAfter = res.headers.get("retry-after") ?? undefined;
         throw err;
       }
       return res;
