@@ -72,6 +72,14 @@ jobs:
           git add -f data/import/bundle.json.gz
           git commit -qm "Import bundle from ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
           git push -fq origin HEAD:refs/heads/data/latest
+      # The cache step above saves only after a successful run; keep what a failed
+      # fetch downloaded so the next try picks up where it stopped.
+      - name: Save the fetched responses of a failed run
+        if: failure()
+        uses: actions/cache/save@v4
+        with:
+          path: .import-cache
+          key: import-cache-${{ github.run_id }}
       # Job logs can't always be read where the import is debugged, so a failed
       # fetch leaves the end of its log on the import-log branch.
       - name: Publish the log of a failed fetch
