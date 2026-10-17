@@ -42,7 +42,9 @@ jobs:
           key: import-cache-${{ github.run_id }}
           restore-keys: import-cache-
       - name: Fetch from Wikidata, Wikipedia and Commons
-        run: npx tsx scripts/import/run.ts fetch --out data/import/bundle.json.gz --cache .import-cache
+        run: |
+          set -o pipefail
+          npx tsx scripts/import/run.ts fetch --out data/import/bundle.json.gz --cache .import-cache 2>&1 | tee "$RUNNER_TEMP/fetch.log"
       - name: Load into the database
         if: github.ref == 'refs/heads/main'
         env:
@@ -70,3 +72,17 @@ jobs:
           git add -f data/import/bundle.json.gz
           git commit -qm "Import bundle from ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
           git push -fq origin HEAD:refs/heads/data/latest
+      # Job logs can't always be read where the import is debugged, so a failed
+      # fetch leaves the end of its log on the import-log branch.
+      - name: Publish the log of a failed fetch
+        if: failure()
+        run: |
+          tail -n 300 "$RUNNER_TEMP/fetch.log" > "$RUNNER_TEMP/fetch-tail.log" || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan import-log
+          git rm -rfq --cached .
+          cp "$RUNNER_TEMP/fetch-tail.log" fetch.log
+          git add -f fetch.log
+          git commit -qm "Failed import log from ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
+          git push -fq origin HEAD:refs/heads/import-log
