@@ -46,7 +46,12 @@ export function PersonLookup({ locale, query }: { locale: Locale; query: string 
       });
       const body = (await res.json().catch(() => ({}))) as { slug?: string; error?: string };
       if (res.ok && body.slug) return router.push(`/${locale}/people/${body.slug}`);
-      const message = res.status === 429 ? t.limited : body.error === "no-birth-year" ? t.cannotAdd : t.failed;
+      const message =
+        res.status === 429
+          ? t.limited
+          : body.error === "no-birth-year" || body.error === "unreliable-dates"
+            ? t.cannotAdd
+            : t.failed;
       setState({ kind: "error", message, candidates });
     } catch (err) {
       console.error(err);

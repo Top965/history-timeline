@@ -7,10 +7,11 @@ import { commonsTitle, getImages } from "./commons";
 import { labelsFor, leadsFor, sitelinkCounts, USED_CLAIMS, yearSpans } from "./fetch";
 import type { Http } from "./http";
 import { BundleSchema, type Bundle } from "./model";
-import { claims, getEntities } from "./wikidata";
+import { claims, firstTime, getEntities } from "./wikidata";
 
 export type PersonFetchResult =
-  { ok: true; bundle: Bundle } | { ok: false; reason: "not-found" | "not-a-person" | "no-article" | "no-birth-year" };
+  | { ok: true; bundle: Bundle }
+  | { ok: false; reason: "not-found" | "not-a-person" | "no-article" | "no-birth-year" | "unreliable-dates" };
 
 /**
  * Builds a one-person bundle for `loadBundle`.
@@ -49,7 +50,11 @@ export async function fetchPerson(
     currentYear: now.getUTCFullYear(),
   };
   const person = buildPerson(entity, ctx);
-  if (!person) return { ok: false, reason: "no-birth-year" };
+  if (!person) {
+    const birth = firstTime(entity, "P569");
+    if (!birth) return { ok: false, reason: "no-birth-year" };
+    return { ok: false, reason: "unreliable-dates" };
+  }
 
   return {
     ok: true,

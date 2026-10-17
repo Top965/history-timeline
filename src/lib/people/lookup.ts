@@ -24,7 +24,10 @@ export type { Candidate };
 
 export type AddResult =
   | { ok: true; slug: string; created: boolean }
-  | { ok: false; reason: "rate-limited" | "not-found" | "not-a-person" | "no-article" | "no-birth-year" };
+  | {
+      ok: false;
+      reason: "rate-limited" | "not-found" | "not-a-person" | "no-article" | "no-birth-year" | "unreliable-dates";
+    };
 
 // One HTTP client per server instance: polite concurrency, no disk cache.
 const http = new Http({ cacheDir: null, concurrency: 4, retries: 2 });

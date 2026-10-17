@@ -4,6 +4,7 @@
  */
 import type { CommonsFileInfo } from "../commons/commons";
 import type { TopicConfig } from "./config/topics";
+import { datesProblem, personNotes } from "./checks";
 import { commonsTitle } from "./commons";
 import type { ImportEvent, ImportPerson, ImportSource, ImportTopic, LifeEvent } from "./model";
 import {
@@ -293,11 +294,14 @@ export function buildLife(e: Entity, ctx: BuildContext): LifeEvent[] {
 export function buildPerson(e: Entity, ctx: BuildContext): ImportPerson | null {
   const title = enTitle(e);
   const birth = firstTime(e, "P569");
-  if (!title || !birth || birth.year > ctx.currentYear) return null;
+  if (!title || !birth) return null;
   let death = firstTime(e, "P570");
   if (death && death.year < birth.year) death = null;
+  // Dates that can't be right would give a wrong timeline: leave the person out.
+  if (datesProblem(birth.year, death?.year ?? null, ctx.currentYear)) return null;
 
   const enLead = ctx.leads.en.get(title);
+  const life = buildLife(e, ctx);
   const ar = arTitle(e);
   const arLead = ar ? ctx.leads.ar.get(ar) : undefined;
   const enName = label(e, "en") ?? cleanTitle(title);
@@ -341,7 +345,18 @@ export function buildPerson(e: Entity, ctx: BuildContext): ImportPerson | null {
           }
         : null,
     },
-    life: buildLife(e, ctx),
+    life,
+    notes: personNotes(
+      e,
+      {
+        birthYear: birth.year,
+        deathYear: death?.year ?? null,
+        birthPlace: labelOf(ctx, birthPlace, "en"),
+        biography: enLead ? enLead.extract : null,
+        life,
+      },
+      ctx.currentYear,
+    ),
   };
 }
 

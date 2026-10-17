@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
+import type { DataNote } from "@/lib/people/notes";
 
 /** Shapes the website renders. Produced by src/lib/db/queries.ts, serializable for client components. */
 
@@ -116,6 +117,12 @@ export type PersonPage = {
     deathDate: string | null;
     birthPlace: string | null;
     deathPlace: string | null;
+    /** The Wikidata entry the facts and dates come from. */
+    wikidataId: string | null;
+    /** Added automatically when a visitor searched for them, and not reviewed yet. */
+    addedFromSearch: boolean;
+    /** What is missing or disputed in the data, so the page can say so. */
+    notes: DataNote[];
   };
   source: TextSource | null;
   life: LifeItem[];

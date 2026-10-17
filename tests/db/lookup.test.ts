@@ -71,6 +71,11 @@ describe.skipIf(!url)("look up anyone", () => {
       join person_translations t on t.person_id = p.id and t.locale = 'en' where p.wikidata_id = ${NEW}`;
     expect(row).toEqual({ added_via: "search", status: "published", name: "Testa Lookupson" });
 
+    const queries = await import("@/lib/db/queries");
+    const page = await queries.getPersonPage("en", "testa-lookupson");
+    expect(page?.person).toMatchObject({ wikidataId: NEW, addedFromSearch: true });
+    expect(page?.person.notes).toEqual(expect.any(Array));
+
     expect(await lookup.addPerson(NEW, "test-b")).toEqual({ ok: true, slug: "testa-lookupson", created: false });
     const [{ n }] = await sql!`select count(*)::int as n from person_requests where wikidata_id = ${NEW}`;
     expect(n).toBe(1);

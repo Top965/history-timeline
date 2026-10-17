@@ -1,4 +1,5 @@
 import type { Locale } from "./config";
+import type { DataNote } from "@/lib/people/notes";
 
 export type Messages = {
   brand: string;
@@ -71,6 +72,14 @@ export type Messages = {
     topics: string;
     kinds: Record<"birth" | "death" | "position" | "conflict" | "team" | "award" | "event", string>;
     now: string;
+    notRecorded: string;
+    placeNotRecorded: string;
+    autoAdded: string;
+    aboutData: string;
+    factsFrom: string;
+    wikidataEntry: string;
+    neverInvented: string;
+    notes: Record<DataNote, string>;
   };
   topic: {
     kicker: string;
@@ -111,7 +120,8 @@ const en: Messages = {
       add: "Add",
       adding: "Building their timeline…",
       limited: "Too many people added just now. Please try again later.",
-      cannotAdd: "We can’t make a timeline for this person yet (no known birth year).",
+      cannotAdd:
+        "We can’t make a reliable timeline for this person yet: their birth year is missing or their dates don’t add up.",
       failed: "That didn’t work. Please try again.",
     },
   },
@@ -174,6 +184,22 @@ const en: Messages = {
       event: "Took part",
     },
     now: "present",
+    notRecorded: "Not recorded",
+    placeNotRecorded: "place not recorded",
+    autoAdded:
+      "This page was made automatically from Wikipedia and Wikidata when someone searched for this person. We haven’t checked it yet, so some details may be missing or wrong.",
+    aboutData: "About this information",
+    factsFrom: "Dates and life events come from this person’s",
+    wikidataEntry: "Wikidata entry",
+    neverInvented:
+      "We only show events that the sources give a date for. Anything without a date is left out rather than guessed.",
+    notes: {
+      "birth-date-disputed": "Sources disagree about the year of birth.",
+      "death-not-recorded": "No date of death is recorded, although they were born long ago.",
+      "birthplace-not-recorded": "The place of birth is not recorded.",
+      "few-dated-facts": "No dated events from their life are recorded yet, beyond birth and death.",
+      "no-biography": "There is no Wikipedia summary to show yet.",
+    },
   },
   topic: {
     kicker: "Topic timeline",
@@ -227,7 +253,7 @@ const ar: Messages = {
       add: "أضف",
       adding: "جارٍ بناء خطه الزمني…",
       limited: "أُضيف عدد كبير من الأشخاص للتو. حاول مرة أخرى لاحقًا.",
-      cannotAdd: "لا يمكننا إنشاء خط زمني لهذا الشخص بعد (سنة ميلاده غير معروفة).",
+      cannotAdd: "لا يمكننا إنشاء خط زمني موثوق لهذا الشخص بعد: سنة ميلاده غير معروفة أو تواريخه غير متّسقة.",
       failed: "لم ينجح ذلك. حاول مرة أخرى.",
     },
   },
@@ -289,6 +315,21 @@ const ar: Messages = {
       event: "شارك في",
     },
     now: "حتى الآن",
+    notRecorded: "غير مسجّل",
+    placeNotRecorded: "المكان غير مسجّل",
+    autoAdded:
+      "أُنشئت هذه الصفحة تلقائيًا من ويكيبيديا وويكي بيانات عندما بحث أحدهم عن هذا الشخص. لم نراجعها بعد، لذا قد تكون بعض التفاصيل ناقصة أو غير دقيقة.",
+    aboutData: "عن هذه المعلومات",
+    factsFrom: "التواريخ وأحداث الحياة مأخوذة من",
+    wikidataEntry: "صفحته في ويكي بيانات",
+    neverInvented: "نعرض فقط الأحداث التي تذكر المصادر تاريخها. ما ليس له تاريخ نتركه ولا نخمّنه.",
+    notes: {
+      "birth-date-disputed": "تختلف المصادر في سنة الولادة.",
+      "death-not-recorded": "لا يوجد تاريخ وفاة مسجّل، رغم أنه وُلد منذ زمن بعيد.",
+      "birthplace-not-recorded": "مكان الولادة غير مسجّل.",
+      "few-dated-facts": "لا توجد بعد أحداث مؤرّخة من حياته غير الولادة والوفاة.",
+      "no-biography": "لا يوجد ملخص من ويكيبيديا بعد.",
+    },
   },
   topic: {
     kicker: "خط زمني لموضوع",

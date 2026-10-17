@@ -104,8 +104,18 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
             <dt className="text-muted">{t.person.born}</dt>
             <dd className="m-0" dir="auto">
               {person.birthDate ? formatDate(person.birthDate, locale) : formatYear(person.birthYear, locale)}
-              {person.birthPlace ? ` · ${person.birthPlace}` : ""}
+              {person.birthPlace ? (
+                ` · ${person.birthPlace}`
+              ) : (
+                <span className="text-muted"> · {t.person.placeNotRecorded}</span>
+              )}
             </dd>
+            {person.deathYear == null && person.notes.includes("death-not-recorded") && (
+              <>
+                <dt className="text-muted">{t.person.died}</dt>
+                <dd className="m-0 text-muted">{t.person.notRecorded}</dd>
+              </>
+            )}
             {person.deathYear != null && (
               <>
                 <dt className="text-muted">{t.person.died}</dt>
@@ -199,6 +209,12 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
         </ol>
       </section>
 
+      {person.addedFromSearch && (
+        <p role="note" className="note m-0 max-w-[65ch]" data-testid="auto-added">
+          {t.person.autoAdded}
+        </p>
+      )}
+
       {person.biography && (
         <section aria-labelledby="bio-heading" className="grid gap-3">
           <h2 id="bio-heading" className={H2}>
@@ -218,6 +234,33 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
           <WikipediaCredit locale={locale} source={page.source} />
         </section>
       )}
+
+      <section aria-labelledby="data-heading" className="grid max-w-[65ch] gap-2 text-sm" data-testid="about-data">
+        <h2 id="data-heading" className="m-0 font-display text-lg font-medium">
+          {t.person.aboutData}
+        </h2>
+        {person.notes.length > 0 && (
+          <ul className="m-0 grid gap-1 ps-5">
+            {person.notes.map((n) => (
+              <li key={n}>{t.person.notes[n]}</li>
+            ))}
+          </ul>
+        )}
+        {person.wikidataId && (
+          <p className="m-0 text-muted">
+            {t.person.factsFrom}{" "}
+            <a
+              href={`https://www.wikidata.org/wiki/${person.wikidataId}`}
+              rel="noopener noreferrer"
+              className="underline decoration-line underline-offset-2"
+            >
+              {t.person.wikidataEntry}
+            </a>
+            .
+          </p>
+        )}
+        <p className="m-0 text-muted">{t.person.neverInvented}</p>
+      </section>
     </article>
   );
 }

@@ -21,6 +21,7 @@ import type {
   TopicPage,
 } from "@/lib/content/types";
 import { CONTENT_SOURCE_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import { isDataNote } from "@/lib/people/notes";
 import { TILE_LIMIT, tileRange, type TileLevel } from "@/lib/timeline/tiles";
 import { publicRead, type Tx } from "./client";
 
@@ -612,9 +613,12 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
       birth_place: string | null;
       death_place: string | null;
       bio_locale: string;
+      wikidata_id: string | null;
+      added_via: string;
+      data_notes: string[];
     })[]
   >`
-    select p.id, p.slug, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
+    select p.id, p.slug, p.wikidata_id, p.added_via::text, p.data_notes, coalesce(l.name, d.name) as name, coalesce(l.description, d.description) as description,
       p.birth_year, p.death_year, p.birth_date, p.death_date, p.is_approximate,
       case when l.person_id is null then ${SRC} else ${locale} end as text_locale,
       coalesce(l.biography, d.biography) as biography,
@@ -685,6 +689,9 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
       deathDate: isoDate(p.death_date),
       birthPlace: p.birth_place,
       deathPlace: p.death_place,
+      wikidataId: p.wikidata_id,
+      addedFromSearch: p.added_via === "search",
+      notes: p.data_notes.filter(isDataNote),
     },
     source: source ? toSource(source) : null,
     life: life.map((r) => ({

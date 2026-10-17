@@ -218,17 +218,20 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
     isApproximate: p.isApproximate,
     sitelinks: p.sitelinks,
     imageId: p.image ? (imageId.get(p.image) ?? null) : null,
+    notes: p.notes,
   }));
   const personIdRows = await tx<{ id: string; wikidata_id: string }[]>`
     insert into public.people (slug, wikidata_id, birth_year, death_year, birth_date, death_date, is_approximate,
-      sitelinks, image_id, status, published_at)
+      sitelinks, image_id, data_notes, status, published_at)
     select r.slug, r."wikidataId", r."birthYear", r."deathYear", r."birthDate", r."deathDate", r."isApproximate",
-      r.sitelinks, r."imageId", 'published', ${now}::timestamptz
+      r.sitelinks, r."imageId", array(select jsonb_array_elements_text(r.notes)), 'published', ${now}::timestamptz
     from jsonb_to_recordset(${json(tx, personRows)}::jsonb) as r(slug text, "wikidataId" text, "birthYear" int,
-      "deathYear" int, "birthDate" date, "deathDate" date, "isApproximate" boolean, sitelinks int, "imageId" uuid)
+      "deathYear" int, "birthDate" date, "deathDate" date, "isApproximate" boolean, sitelinks int, "imageId" uuid,
+      notes jsonb)
     on conflict (wikidata_id) do update set
       birth_year = excluded.birth_year, death_year = excluded.death_year, birth_date = excluded.birth_date,
       death_date = excluded.death_date, is_approximate = excluded.is_approximate, sitelinks = excluded.sitelinks,
+      data_notes = excluded.data_notes,
       image_id = coalesce(public.people.image_id, excluded.image_id)
     returning id, wikidata_id`;
   const personId = new Map(personIdRows.map((r) => [r.wikidata_id, r.id]));
