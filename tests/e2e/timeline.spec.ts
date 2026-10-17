@@ -79,9 +79,10 @@ test.describe("timeline", () => {
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/en\/topics\/ancient-egypt$/);
     await expect(page.getByRole("heading", { level: 1, name: "Ancient Egypt" })).toBeVisible();
-    await expect(page.getByText("c. 3,100 BCE – 30 BCE").first()).toBeVisible();
+    await expect(page.getByText("c. 3,100 BCE – 30 BCE").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByTestId("topic-events")).toContainText("Great Pyramid of Giza");
-    await expect(page.getByTestId("timeline")).toBeVisible();
+    // The home page stays mounted (hidden) after navigating, so pick the visible timeline.
+    await expect(page.getByTestId("timeline").filter({ visible: true })).toBeVisible();
   });
 
   test("searches years with BC and typos", async ({ page }) => {

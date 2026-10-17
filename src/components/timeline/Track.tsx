@@ -275,7 +275,7 @@ export function Track(props: Props) {
                 isHl
                   ? "pin-pulse border-accent bg-accent text-accent-ink"
                   : isMuted
-                    ? "border-line bg-surface text-muted opacity-60 hover:opacity-100"
+                    ? "border-dashed border-line bg-track text-muted hover:bg-surface"
                     : e.importance === 1
                       ? "border-accent bg-surface font-semibold hover:bg-accent-soft"
                       : "border-line bg-surface hover:bg-accent-soft",
