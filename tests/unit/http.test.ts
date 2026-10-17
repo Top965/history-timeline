@@ -59,7 +59,10 @@ describe("Http rate limits", () => {
 
   it("gives up after repeated 429s", async () => {
     vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn(async () => limited("1")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => limited("1")),
+    );
     const done = new Http({ cacheDir: null }).json("https://ar.wikipedia.org/w/api.php?a=1", {
       service: "wikipedia",
       operation: "test",
