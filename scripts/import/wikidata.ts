@@ -199,3 +199,24 @@ export async function getEntities(
   );
   return out;
 }
+
+export type SearchHit = { id: string; label: string | null; description: string | null };
+
+/** Wikidata's own name search (labels and aliases, typo-tolerant prefix match) in one language. */
+export async function searchEntities(http: Http, query: string, language: string, limit = 10): Promise<SearchHit[]> {
+  const url = new URL(WIKIDATA_API);
+  url.search = new URLSearchParams({
+    action: "wbsearchentities",
+    format: "json",
+    type: "item",
+    search: query,
+    language,
+    uselang: language,
+    limit: String(limit),
+  }).toString();
+  const res = await http.json<{ search?: { id: string; label?: string; description?: string }[] }>(url.toString(), {
+    service: "wikidata",
+    operation: "wikidata.searchentities",
+  });
+  return (res.search ?? []).map((h) => ({ id: h.id, label: h.label ?? null, description: h.description ?? null }));
+}

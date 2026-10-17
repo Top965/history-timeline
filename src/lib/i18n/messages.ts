@@ -13,6 +13,16 @@ export type Messages = {
     searching: string;
     failed: string;
     types: { year: string; era: string; topic: string; event: string; person: string };
+    lookup: {
+      prompt: (q: string) => string;
+      looking: string;
+      none: string;
+      add: string;
+      adding: string;
+      limited: string;
+      cannotAdd: string;
+      failed: string;
+    };
   };
   readout: { hint: string; era: (name: string) => string };
   eras: { label: string; now: string };
@@ -94,6 +104,16 @@ const en: Messages = {
     searching: "Searching…",
     failed: "Search isn’t working right now. Please try again.",
     types: { year: "Year", era: "Era", topic: "Topic", event: "Event", person: "Person" },
+    lookup: {
+      prompt: (q) => `Looking for someone else? Find “${q}” on Wikipedia`,
+      looking: "Looking on Wikipedia…",
+      none: "No one by that name on Wikipedia who isn’t already here.",
+      add: "Add",
+      adding: "Building their timeline…",
+      limited: "Too many people added just now. Please try again later.",
+      cannotAdd: "We can’t make a timeline for this person yet (no known birth year).",
+      failed: "That didn’t work. Please try again.",
+    },
   },
   readout: {
     hint: "Drag left or right to move in time. Scroll, pinch or use + and − to zoom from eras down to single years.",
@@ -200,6 +220,16 @@ const ar: Messages = {
     searching: "جارٍ البحث…",
     failed: "البحث لا يعمل الآن. حاول مرة أخرى.",
     types: { year: "سنة", era: "عصر", topic: "موضوع", event: "حدث", person: "شخصية" },
+    lookup: {
+      prompt: (q) => `تبحث عن شخص آخر؟ ابحث عن «${q}» في ويكيبيديا`,
+      looking: "جارٍ البحث في ويكيبيديا…",
+      none: "لا يوجد في ويكيبيديا شخص بهذا الاسم غير موجود هنا.",
+      add: "أضف",
+      adding: "جارٍ بناء خطه الزمني…",
+      limited: "أُضيف عدد كبير من الأشخاص للتو. حاول مرة أخرى لاحقًا.",
+      cannotAdd: "لا يمكننا إنشاء خط زمني لهذا الشخص بعد (سنة ميلاده غير معروفة).",
+      failed: "لم ينجح ذلك. حاول مرة أخرى.",
+    },
   },
   readout: {
     hint: "اسحب يمينًا أو يسارًا للتنقل في الزمن. مرّر أو قرّب بإصبعين أو استخدم + و − للتكبير من العصور حتى السنة الواحدة.",
