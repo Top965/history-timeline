@@ -1,0 +1,46 @@
+name: Fetch relay
+
+# Development helper: the coding workspace cannot reach Wikimedia, GitHub can.
+# Push URLs to fetch/requests.txt on a fetch/** branch; this job downloads each
+# one into fetch/out/ and commits the results back to the same branch.
+
+on:
+  push:
+    branches: ["fetch/**"]
+    paths: ["fetch/requests.txt"]
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch requested URLs
+        run: |
+          set -u
+          mkdir -p fetch/out
+          ua="HistoryTimelineBot/0.1 (https://github.com/Top965/history-timeline)"
+          while IFS= read -r url || [ -n "$url" ]; do
+            [ -z "$url" ] && continue
+            case "$url" in \#*) continue ;; esac
+            host=$(printf '%s' "$url" | sed -E 's#^https://([^/]+)/.*#\1#')
+            case "$host" in
+              www.wikidata.org|query.wikidata.org|en.wikipedia.org|ar.wikipedia.org|commons.wikimedia.org) ;;
+              *) echo "skip (host not allowed): $url"; continue ;;
+            esac
+            name=$(printf '%s' "$url" | sha1sum | cut -c1-16)
+            code=$(curl -sS -L --retry 3 --retry-delay 5 -A "$ua" -H 'Accept: application/sparql-results+json, application/json' -o "fetch/out/$name.body" -w '%{http_code}' "$url" || echo 000)
+            printf '%s\t%s\t%s\n' "$name" "$code" "$url" >> fetch/out/index.tsv
+            echo "$code $url"
+            sleep 1
+          done < fetch/requests.txt
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fetch/out
+          git commit -m "Fetch relay results" || exit 0
+          git push
