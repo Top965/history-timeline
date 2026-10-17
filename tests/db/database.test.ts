@@ -170,7 +170,7 @@ describe.skipIf(!url)("database", () => {
       queries = await import("@/lib/db/queries");
     });
 
-    it("loads the timeline with Arabic names and English fallbacks", async () => {
+    it("loads the timeline in Arabic", async () => {
       const en = await queries.getTimelineData("en");
       const ar = await queries.getTimelineData("ar");
       expect(en.events).toHaveLength(64);
@@ -186,8 +186,9 @@ describe.skipIf(!url)("database", () => {
       expect(ar.eras[0].name).toBe("العصور القديمة");
       const ipAr = ar.topics.find((t) => t.slug === "israeli-palestinian-conflict")!;
       expect(ipAr.name).toBe("الصراع الإسرائيلي الفلسطيني");
-      expect(ipAr.summaryLocale).toBe("en");
-      expect(ar.events.every((e) => e.textLocale === "en")).toBe(true);
+      expect(ipAr.summaryLocale).toBe("ar");
+      expect(ar.events.every((e) => e.textLocale === "ar")).toBe(true);
+      expect(ar.events.find((e) => e.slug === "the-hijra")?.title).toBe("الهجرة النبوية");
       expect(en.events.find((e) => e.slug === "world-war-i")?.hasFullStory).toBe(true);
       const wc = en.topics.find((t) => t.slug === "fifa-world-cup")!;
       expect(wc.eventSlugs[0]).toBe("first-fifa-world-cup");
@@ -218,7 +219,8 @@ describe.skipIf(!url)("database", () => {
     it("loads short events with neighbours and returns null for unknown slugs", async () => {
       const page = (await queries.getEventPage("ar", "great-pyramid-of-giza"))!;
       expect(page.story).toBeNull();
-      expect(page.event.textLocale).toBe("en");
+      expect(page.event.textLocale).toBe("ar");
+      expect(page.event.title).toBe("الهرم الأكبر في الجيزة");
       expect(page.era?.name).toBe("العصور القديمة");
       expect(page.previous?.slug).toBe("upper-and-lower-egypt-unite");
       expect(page.next?.slug).toBe("code-of-hammurabi");
