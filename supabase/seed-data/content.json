@@ -1,0 +1,1860 @@
+{
+  "eras": [
+    {
+      "slug": "ancient",
+      "startYear": -3600,
+      "endYear": -500,
+      "colorToken": "--e1",
+      "sortOrder": 1,
+      "translations": {
+        "en": {
+          "name": "Ancient",
+          "keywords": []
+        },
+        "ar": {
+          "name": "العصور القديمة",
+          "keywords": ["قديم", "القديمة"]
+        }
+      }
+    },
+    {
+      "slug": "classical",
+      "startYear": -500,
+      "endYear": 500,
+      "colorToken": "--e2",
+      "sortOrder": 2,
+      "translations": {
+        "en": {
+          "name": "Classical",
+          "keywords": []
+        },
+        "ar": {
+          "name": "العصر الكلاسيكي",
+          "keywords": ["كلاسيكي"]
+        }
+      }
+    },
+    {
+      "slug": "medieval",
+      "startYear": 500,
+      "endYear": 1450,
+      "colorToken": "--e3",
+      "sortOrder": 3,
+      "translations": {
+        "en": {
+          "name": "Medieval",
+          "keywords": ["middle", "ages"]
+        },
+        "ar": {
+          "name": "العصور الوسطى",
+          "keywords": ["الوسطى", "وسطى"]
+        }
+      }
+    },
+    {
+      "slug": "early-modern",
+      "startYear": 1450,
+      "endYear": 1789,
+      "colorToken": "--e4",
+      "sortOrder": 4,
+      "translations": {
+        "en": {
+          "name": "Early Modern",
+          "keywords": []
+        },
+        "ar": {
+          "name": "أوائل العصر الحديث",
+          "keywords": ["النهضة"]
+        }
+      }
+    },
+    {
+      "slug": "modern",
+      "startYear": 1789,
+      "endYear": 1945,
+      "colorToken": "--e5",
+      "sortOrder": 5,
+      "translations": {
+        "en": {
+          "name": "Modern",
+          "keywords": []
+        },
+        "ar": {
+          "name": "العصر الحديث",
+          "keywords": ["حديث", "الحديث"]
+        }
+      }
+    },
+    {
+      "slug": "contemporary",
+      "startYear": 1945,
+      "endYear": null,
+      "colorToken": "--e6",
+      "sortOrder": 6,
+      "translations": {
+        "en": {
+          "name": "Contemporary",
+          "keywords": []
+        },
+        "ar": {
+          "name": "العصر المعاصر",
+          "keywords": ["معاصر", "المعاصر"]
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "slug": "writing-begins-in-sumer",
+      "prototypeId": "writing",
+      "startYear": -3200,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Writing begins in Sumer",
+          "summary": "Scribes in cities like Uruk press wedge-shaped marks into clay tablets to keep records of grain and goods. Cuneiform is one of the first writing systems, and it marks the start of recorded history.",
+          "placeLabel": "Mesopotamia (Iraq)",
+          "mediaHint": "Clay tablet with cuneiform signs",
+          "keywords": ["cuneiform", "sumerian", "iraq", "ancient"]
+        }
+      }
+    },
+    {
+      "slug": "upper-and-lower-egypt-unite",
+      "prototypeId": "egypt-unify",
+      "startYear": -3100,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Upper and Lower Egypt unite",
+          "summary": "Tradition credits King Narmer (Menes) with joining Upper and Lower Egypt into one kingdom, the start of the age of the pharaohs.",
+          "placeLabel": "Egypt",
+          "mediaHint": "The Narmer Palette",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "great-pyramid-of-giza",
+      "prototypeId": "pyramid",
+      "startYear": -2560,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Great Pyramid of Giza",
+          "summary": "Built as a tomb for the pharaoh Khufu, it remained the tallest human-made structure on Earth for roughly 3,800 years.",
+          "placeLabel": "Giza, Egypt",
+          "mediaHint": "The Great Pyramid on the Giza plateau",
+          "keywords": ["pyramids", "giza", "khufu", "pharaoh", "egyptian", "ancient"]
+        }
+      }
+    },
+    {
+      "slug": "code-of-hammurabi",
+      "prototypeId": "hammurabi",
+      "startYear": -1754,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Code of Hammurabi",
+          "summary": "King Hammurabi of Babylon has 282 laws carved on a basalt stele. It is one of the oldest written law codes known.",
+          "placeLabel": "Babylon (Iraq)",
+          "mediaHint": "The stele of Hammurabi",
+          "keywords": ["law", "babylonian", "iraq"]
+        }
+      }
+    },
+    {
+      "slug": "tutankhamun-becomes-pharaoh",
+      "prototypeId": "tut",
+      "startYear": -1332,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Tutankhamun becomes pharaoh",
+          "summary": "The boy king rules for about ten years. His nearly intact tomb, found in 1922, makes him the best-known pharaoh today.",
+          "placeLabel": "Egypt",
+          "mediaHint": "Tutankhamun’s golden mask",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "first-recorded-olympic-games",
+      "prototypeId": "olympics",
+      "startYear": -776,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "First recorded Olympic Games",
+          "summary": "The earliest recorded Games are held at Olympia. Greeks later count years in four-year Olympiads starting from this date.",
+          "placeLabel": "Olympia, Greece",
+          "mediaHint": "Ruins of the stadium at Olympia",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "roman-republic-founded",
+      "prototypeId": "rome-rep",
+      "startYear": -509,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Roman Republic founded",
+          "summary": "Romans expel their last king and set up a republic run by elected officials and a Senate.",
+          "placeLabel": "Rome",
+          "mediaHint": "Ruins of the Roman Forum",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "campaigns-of-alexander",
+      "prototypeId": "alexander",
+      "startYear": -334,
+      "endYear": -323,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Campaigns of Alexander",
+          "summary": "Alexander of Macedon defeats the Persian Empire and marches as far as the Indus River, spreading Greek culture across the Middle East.",
+          "placeLabel": "Greece to India",
+          "mediaHint": "The Alexander Mosaic, Pompeii",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "qin-unifies-china",
+      "prototypeId": "qin",
+      "startYear": -221,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Qin unifies China",
+          "summary": "Qin Shi Huang conquers the rival states and becomes China’s first emperor. He standardizes writing, coins and measures.",
+          "placeLabel": "China",
+          "mediaHint": "The Terracotta Army, Xi’an",
+          "keywords": ["china", "chinese", "emperor"]
+        }
+      }
+    },
+    {
+      "slug": "julius-caesar-assassinated",
+      "prototypeId": "caesar",
+      "startYear": -44,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Julius Caesar assassinated",
+          "summary": "Senators stab Caesar on the Ides of March. The civil wars that follow end the Republic and bring Augustus to power as the first emperor.",
+          "placeLabel": "Rome",
+          "mediaHint": "Site of the Theatre of Pompey, Rome",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "death-of-cleopatra",
+      "prototypeId": "cleopatra",
+      "startYear": -30,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Death of Cleopatra",
+          "summary": "Cleopatra VII, the last ruler of Ptolemaic Egypt, dies after her defeat by Octavian. Egypt becomes a Roman province.",
+          "placeLabel": "Alexandria, Egypt",
+          "mediaHint": "Bust of Cleopatra VII",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "fall-of-western-rome",
+      "prototypeId": "rome-fall",
+      "startYear": 476,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Fall of Western Rome",
+          "summary": "The Germanic leader Odoacer removes Romulus Augustulus, the last western emperor. The eastern half continues as the Byzantine Empire for almost 1,000 more years.",
+          "placeLabel": "Italy",
+          "mediaHint": "Coin of Romulus Augustulus",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "the-hijra",
+      "prototypeId": "hijra",
+      "startYear": 622,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "The Hijra",
+          "summary": "The Prophet Muhammad migrates from Mecca to Medina. This year becomes year 1 of the Islamic (Hijri) calendar.",
+          "placeLabel": "Mecca to Medina",
+          "mediaHint": "Masjid an-Nabawi, Medina",
+          "keywords": ["islam", "islamic", "muhammad", "prophet", "hijri", "calendar"]
+        }
+      }
+    },
+    {
+      "slug": "baghdad-founded",
+      "prototypeId": "baghdad",
+      "startYear": 762,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Baghdad founded",
+          "summary": "The Abbasid caliph al-Mansur builds a round city on the Tigris. Baghdad becomes a world center of science, translation and trade.",
+          "placeLabel": "Iraq",
+          "mediaHint": "Plan of the Round City of Baghdad",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "norman-conquest-of-england",
+      "prototypeId": "hastings",
+      "startYear": 1066,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Norman conquest of England",
+          "summary": "William of Normandy wins the Battle of Hastings and is crowned king of England.",
+          "placeLabel": "England",
+          "mediaHint": "Detail of the Bayeux Tapestry",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "genghis-khan-unites-the-mongols",
+      "prototypeId": "genghis",
+      "startYear": 1206,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Genghis Khan unites the Mongols",
+          "summary": "Temüjin is proclaimed Genghis Khan. His armies go on to build the largest land empire in history.",
+          "placeLabel": "Mongolia",
+          "mediaHint": "Mongolian steppe",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "mongols-sack-baghdad",
+      "prototypeId": "baghdad-fall",
+      "startYear": 1258,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Mongols sack Baghdad",
+          "summary": "Hulagu Khan’s army captures Baghdad and kills the caliph al-Musta’sim, ending the Abbasid golden age in the city.",
+          "placeLabel": "Iraq",
+          "mediaHint": "Persian manuscript of the siege of Baghdad",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "the-black-death",
+      "prototypeId": "plague",
+      "startYear": 1347,
+      "endYear": 1351,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "The Black Death",
+          "summary": "Plague spreads along trade routes and kills an estimated third or more of Europe’s population within four years.",
+          "placeLabel": "Asia, Europe, Middle East",
+          "mediaHint": "Medieval plague manuscript illustration",
+          "keywords": ["plague", "pandemic", "black", "death"]
+        }
+      }
+    },
+    {
+      "slug": "gutenbergs-printing-press",
+      "prototypeId": "press",
+      "startYear": 1440,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Gutenberg’s printing press",
+          "summary": "Johannes Gutenberg develops movable-type printing in Europe. Books become cheaper and ideas spread faster than ever before.",
+          "placeLabel": "Mainz, Germany",
+          "mediaHint": "A page of the Gutenberg Bible",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "fall-of-constantinople",
+      "prototypeId": "constantinople",
+      "startYear": 1453,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Fall of Constantinople",
+          "summary": "Ottoman sultan Mehmed II captures Constantinople, ending the Byzantine Empire. The city becomes the Ottoman capital.",
+          "placeLabel": "Istanbul",
+          "mediaHint": "The Theodosian Walls, Istanbul",
+          "keywords": ["ottoman", "byzantine", "istanbul"]
+        }
+      }
+    },
+    {
+      "slug": "columbus-reaches-the-americas",
+      "prototypeId": "columbus",
+      "startYear": 1492,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Columbus reaches the Americas",
+          "summary": "Christopher Columbus lands in the Bahamas, beginning lasting contact between Europe and the Americas.",
+          "placeLabel": "Caribbean",
+          "mediaHint": "Replica of the Santa María",
+          "keywords": ["america", "discovery"]
+        }
+      }
+    },
+    {
+      "slug": "protestant-reformation",
+      "prototypeId": "reformation",
+      "startYear": 1517,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Protestant Reformation",
+          "summary": "Martin Luther publishes his 95 Theses, starting a lasting split in Western Christianity.",
+          "placeLabel": "Wittenberg, Germany",
+          "mediaHint": "Castle Church, Wittenberg",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "copernicus-sun-at-the-center",
+      "prototypeId": "copernicus",
+      "startYear": 1543,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Copernicus: Sun at the center",
+          "summary": "Nicolaus Copernicus publishes his model of the Earth orbiting the Sun.",
+          "placeLabel": "Poland",
+          "mediaHint": "Copernicus’s diagram of the solar system",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "newtons-principia",
+      "prototypeId": "newton",
+      "startYear": 1687,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Newton’s Principia",
+          "summary": "Isaac Newton publishes his laws of motion and universal gravitation.",
+          "placeLabel": "England",
+          "mediaHint": "First edition of the Principia",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "al-sabah-rule-begins-in-kuwait",
+      "prototypeId": "kuwait-sabah",
+      "startYear": 1752,
+      "endYear": null,
+      "isApproximate": true,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Al-Sabah rule begins in Kuwait",
+          "summary": "Kuwait’s families choose Sabah bin Jaber as their leader, beginning the rule of the Al-Sabah family.",
+          "placeLabel": "Kuwait",
+          "mediaHint": "Dhows in the old harbor of Kuwait Town",
+          "keywords": ["gulf", "sabah"]
+        }
+      }
+    },
+    {
+      "slug": "industrial-revolution",
+      "prototypeId": "industrial",
+      "startYear": 1760,
+      "endYear": 1840,
+      "isApproximate": true,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Industrial Revolution",
+          "summary": "Steam power, factories and railways change how people work and live, starting in Britain and spreading worldwide.",
+          "placeLabel": "Britain, then the world",
+          "mediaHint": "Steam engine in a cotton mill",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "us-declaration-of-independence",
+      "prototypeId": "usa",
+      "startYear": 1776,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "US Declaration of Independence",
+          "summary": "Thirteen American colonies declare independence from Britain.",
+          "placeLabel": "Philadelphia",
+          "mediaHint": "The Declaration of Independence manuscript",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "french-revolution",
+      "prototypeId": "french-rev",
+      "startYear": 1789,
+      "endYear": 1799,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "French Revolution",
+          "summary": "Parisians storm the Bastille. The monarchy falls, and ideas of rights and citizenship spread across Europe.",
+          "placeLabel": "France",
+          "mediaHint": "Painting of the storming of the Bastille",
+          "keywords": ["france", "revolution", "napoleon"]
+        }
+      }
+    },
+    {
+      "slug": "battle-of-waterloo",
+      "prototypeId": "waterloo",
+      "startYear": 1815,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Battle of Waterloo",
+          "summary": "Napoleon is defeated by British and Prussian armies, ending his rule.",
+          "placeLabel": "Belgium",
+          "mediaHint": "The Waterloo battlefield",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "suez-canal-opens",
+      "prototypeId": "suez",
+      "startYear": 1869,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Suez Canal opens",
+          "summary": "The canal links the Mediterranean and the Red Sea, cutting thousands of kilometers off the sea route from Europe to Asia.",
+          "placeLabel": "Egypt",
+          "mediaHint": "Ships at the canal’s opening, 1869",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "anglo-kuwaiti-agreement",
+      "prototypeId": "kuwait-1899",
+      "startYear": 1899,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Anglo-Kuwaiti Agreement",
+          "summary": "Sheikh Mubarak Al-Sabah signs an agreement that places Kuwait under British protection.",
+          "placeLabel": "Kuwait",
+          "mediaHint": "Portrait of Sheikh Mubarak Al-Sabah",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "first-powered-flight",
+      "prototypeId": "flight",
+      "startYear": 1903,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "First powered flight",
+          "summary": "Orville and Wilbur Wright fly the first powered, controlled airplane. The first flight lasts 12 seconds.",
+          "placeLabel": "Kitty Hawk, USA",
+          "mediaHint": "The Wright Flyer, 17 December 1903",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "world-war-i",
+      "prototypeId": "ww1",
+      "startYear": 1914,
+      "endYear": 1918,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "World War I",
+          "summary": "Four years of war that killed millions, destroyed four empires and redrew the map of Europe and the Middle East.",
+          "placeLabel": "Europe, Middle East, Africa, Asia",
+          "mediaHint": null,
+          "keywords": ["ww1", "wwi", "first", "great", "war"]
+        }
+      }
+    },
+    {
+      "slug": "russian-revolution",
+      "prototypeId": "russian-rev",
+      "startYear": 1917,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Russian Revolution",
+          "summary": "Revolutions in February and October end the rule of the tsars and bring the Bolsheviks, led by Lenin, to power.",
+          "placeLabel": "Russia",
+          "mediaHint": "Street protest in Petrograd, 1917",
+          "keywords": ["russia", "soviet", "lenin", "bolshevik", "communism"]
+        }
+      }
+    },
+    {
+      "slug": "ottoman-empire-ends",
+      "prototypeId": "ottoman-end",
+      "startYear": 1922,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Ottoman Empire ends",
+          "summary": "The sultanate is abolished after more than six centuries. The Republic of Turkey is declared the following year.",
+          "placeLabel": "Turkey",
+          "mediaHint": "Dolmabahçe Palace, Istanbul",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "wall-street-crash",
+      "prototypeId": "crash",
+      "startYear": 1929,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Wall Street Crash",
+          "summary": "The US stock market collapses, and the Great Depression spreads around the world.",
+          "placeLabel": "New York",
+          "mediaHint": "Crowds outside the New York Stock Exchange",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "first-fifa-world-cup",
+      "prototypeId": "wc-1930",
+      "startYear": 1930,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "First FIFA World Cup",
+          "summary": "Thirteen teams play the first World Cup. Hosts Uruguay beat Argentina 4–2 in the final.",
+          "placeLabel": "Montevideo, Uruguay",
+          "mediaHint": "Estadio Centenario, Montevideo, 1930",
+          "keywords": ["world", "cup", "football", "soccer", "fifa", "sport", "sports", "uruguay"]
+        }
+      }
+    },
+    {
+      "slug": "oil-discovered-in-kuwait",
+      "prototypeId": "kuwait-oil",
+      "startYear": 1938,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Oil discovered in Kuwait",
+          "summary": "Drillers strike oil at Burgan, one of the largest oil fields in the world. Exports begin in 1946.",
+          "placeLabel": "Burgan field, Kuwait",
+          "mediaHint": "The Burgan No. 1 well",
+          "keywords": ["oil", "petroleum", "burgan", "gulf"]
+        }
+      }
+    },
+    {
+      "slug": "world-war-ii",
+      "prototypeId": "ww2",
+      "startYear": 1939,
+      "endYear": 1945,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "World War II",
+          "summary": "The deadliest conflict in history, fought between the Allies and the Axis powers. It ends with the surrender of Germany and Japan in 1945.",
+          "placeLabel": "Worldwide",
+          "mediaHint": "Allied landing craft, Normandy, 1944",
+          "keywords": ["ww2", "wwii", "second", "nazi", "hitler", "holocaust"]
+        }
+      }
+    },
+    {
+      "slug": "united-nations-founded",
+      "prototypeId": "un",
+      "startYear": 1945,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "United Nations founded",
+          "summary": "Fifty nations sign the UN Charter in June 1945 to prevent another world war.",
+          "placeLabel": "San Francisco",
+          "mediaHint": "Signing of the UN Charter",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "1948-arab-israeli-war",
+      "prototypeId": "ip-1948",
+      "startYear": 1948,
+      "endYear": 1949,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "1948 Arab–Israeli War",
+          "summary": "Israel declares independence on 14 May 1948 as the British Mandate ends, and neighboring Arab states go to war. About 700,000 Palestinians flee or are expelled from their homes, an event Palestinians call the Nakba (“catastrophe”).",
+          "placeLabel": "Israel and Palestine",
+          "mediaHint": "Map of the 1949 armistice lines",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "nakba",
+            "independence",
+            "arab",
+            "war",
+            "conflict"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "kuwaits-independence",
+      "prototypeId": "kuwait-ind",
+      "startYear": 1961,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Kuwait’s independence",
+          "summary": "On 19 June 1961 Kuwait ends the 1899 agreement with Britain and becomes fully independent.",
+          "placeLabel": "Kuwait",
+          "mediaHint": "The flag of Kuwait",
+          "keywords": ["independence", "gulf"]
+        }
+      }
+    },
+    {
+      "slug": "six-day-war",
+      "prototypeId": "ip-1967",
+      "startYear": 1967,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Six-Day War",
+          "summary": "In six days in June 1967, Israel defeats Egypt, Jordan and Syria and takes control of the West Bank, East Jerusalem, Gaza, the Sinai Peninsula and the Golan Heights.",
+          "placeLabel": "Middle East",
+          "mediaHint": "Map of territories before and after June 1967",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "egypt",
+            "jordan",
+            "syria",
+            "jerusalem",
+            "gaza",
+            "west",
+            "bank",
+            "arab",
+            "war",
+            "conflict"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "apollo-11-moon-landing",
+      "prototypeId": "moon",
+      "startYear": 1969,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Apollo 11 Moon landing",
+          "summary": "Neil Armstrong and Buzz Aldrin become the first people to walk on the Moon.",
+          "placeLabel": "The Moon",
+          "mediaHint": "Bootprint in lunar soil",
+          "keywords": ["apollo", "space", "nasa", "armstrong"]
+        }
+      }
+    },
+    {
+      "slug": "brazil-wins-a-third-world-cup",
+      "prototypeId": "wc-1970",
+      "startYear": 1970,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Brazil wins a third World Cup",
+          "summary": "Pelé’s Brazil win in Mexico, become the first team to lift the trophy three times and keep the original Jules Rimet trophy. It is also the first World Cup broadcast in color.",
+          "placeLabel": "Mexico",
+          "mediaHint": "Estadio Azteca, Mexico City",
+          "keywords": ["world", "cup", "football", "soccer", "fifa", "sport", "sports", "brazil", "pele"]
+        }
+      }
+    },
+    {
+      "slug": "october-yom-kippur-war",
+      "prototypeId": "ip-1973",
+      "startYear": 1973,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "October (Yom Kippur) War",
+          "summary": "Egypt and Syria launch a surprise attack in October 1973 to win back land lost in 1967. The war also triggers an Arab oil embargo against Western supporters of Israel.",
+          "placeLabel": "Sinai and Golan Heights",
+          "mediaHint": "Egyptian forces crossing the Suez Canal",
+          "keywords": ["israel", "israeli", "egypt", "syria", "arab", "war", "conflict", "oil", "embargo"]
+        }
+      }
+    },
+    {
+      "slug": "egypt-israel-peace-treaty",
+      "prototypeId": "ip-1979",
+      "startYear": 1979,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Egypt–Israel peace treaty",
+          "summary": "Egypt becomes the first Arab state to sign a peace treaty with Israel, following the 1978 Camp David Accords. Israel returns the Sinai by 1982.",
+          "placeLabel": "Washington, D.C.",
+          "mediaHint": "Signing of the peace treaty, March 1979",
+          "keywords": ["israel", "israeli", "egypt", "peace", "camp", "david", "sadat", "begin", "arab", "conflict"]
+        }
+      }
+    },
+    {
+      "slug": "kuwait-plays-at-the-world-cup",
+      "prototypeId": "wc-1982",
+      "startYear": 1982,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Kuwait plays at the World Cup",
+          "summary": "Kuwait qualifies for its first and only World Cup so far, playing Czechoslovakia, France and England. Italy wins the tournament.",
+          "placeLabel": "Spain",
+          "mediaHint": "Kuwait national team, 1982",
+          "keywords": ["world", "cup", "football", "soccer", "fifa", "sport", "sports", "kuwait", "spain"]
+        }
+      }
+    },
+    {
+      "slug": "maradonas-world-cup",
+      "prototypeId": "wc-1986",
+      "startYear": 1986,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Maradona’s World Cup",
+          "summary": "Diego Maradona leads Argentina to the title. His two goals against England, the “Hand of God” and a solo run past five players, become legend.",
+          "placeLabel": "Mexico",
+          "mediaHint": "Estadio Azteca, 1986",
+          "keywords": ["world", "cup", "football", "soccer", "fifa", "sport", "sports", "argentina", "maradona"]
+        }
+      }
+    },
+    {
+      "slug": "first-intifada",
+      "prototypeId": "ip-1987",
+      "startYear": 1987,
+      "endYear": 1993,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "First Intifada",
+          "summary": "A Palestinian uprising against Israeli occupation begins in Gaza in December 1987 and spreads to the West Bank.",
+          "placeLabel": "Gaza and West Bank",
+          "mediaHint": "Street in Gaza, 1988",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "intifada",
+            "uprising",
+            "gaza",
+            "west",
+            "bank",
+            "conflict"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "fall-of-the-berlin-wall",
+      "prototypeId": "berlin",
+      "startYear": 1989,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "Fall of the Berlin Wall",
+          "summary": "East Germany opens its border. The Cold War division of Europe begins to end.",
+          "placeLabel": "Berlin",
+          "mediaHint": "Crowds on the Berlin Wall, November 1989",
+          "keywords": ["cold", "war", "germany", "wall"]
+        }
+      }
+    },
+    {
+      "slug": "invasion-and-liberation-of-kuwait",
+      "prototypeId": "kuwait-lib",
+      "startYear": 1990,
+      "endYear": 1991,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Invasion and liberation of Kuwait",
+          "summary": "Iraq invades Kuwait on 2 August 1990. A US-led coalition liberates the country on 26 February 1991.",
+          "placeLabel": "Kuwait",
+          "mediaHint": "Kuwait Towers",
+          "keywords": ["gulf", "war", "iraq", "invasion", "desert", "storm", "liberation"]
+        }
+      }
+    },
+    {
+      "slug": "world-wide-web-goes-public",
+      "prototypeId": "web",
+      "startYear": 1991,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "World Wide Web goes public",
+          "summary": "Tim Berners-Lee’s World Wide Web opens to the public, bringing the internet to everyday users.",
+          "placeLabel": "CERN, Switzerland",
+          "mediaHint": "The first web server at CERN",
+          "keywords": ["internet", "www"]
+        }
+      }
+    },
+    {
+      "slug": "oslo-accords",
+      "prototypeId": "ip-1993",
+      "startYear": 1993,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Oslo Accords",
+          "summary": "Israel and the Palestine Liberation Organization recognize each other and agree to limited Palestinian self-rule, creating the Palestinian Authority.",
+          "placeLabel": "Washington, D.C.",
+          "mediaHint": "Signing ceremony at the White House, 1993",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "plo",
+            "oslo",
+            "peace",
+            "arafat",
+            "rabin",
+            "conflict"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "second-intifada",
+      "prototypeId": "ip-2000",
+      "startYear": 2000,
+      "endYear": 2005,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "Second Intifada",
+          "summary": "Peace talks collapse and a second, more violent uprising begins, with suicide bombings in Israel and Israeli military operations in the West Bank and Gaza.",
+          "placeLabel": "Israel, Gaza and West Bank",
+          "mediaHint": "Separation barrier in the West Bank",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "intifada",
+            "uprising",
+            "gaza",
+            "west",
+            "bank",
+            "conflict"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "september-11-attacks",
+      "prototypeId": "sept11",
+      "startYear": 2001,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "September 11 attacks",
+          "summary": "Hijacked planes strike the World Trade Center and the Pentagon, killing nearly 3,000 people.",
+          "placeLabel": "New York and Washington",
+          "mediaHint": "Tribute in Light memorial",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "first-world-cup-in-asia",
+      "prototypeId": "wc-2002",
+      "startYear": 2002,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "First World Cup in Asia",
+          "summary": "The first World Cup held in Asia and the first with two host countries. Brazil wins a record fifth title.",
+          "placeLabel": "South Korea and Japan",
+          "mediaHint": "Yokohama International Stadium",
+          "keywords": [
+            "world",
+            "cup",
+            "football",
+            "soccer",
+            "fifa",
+            "sport",
+            "sports",
+            "asia",
+            "korea",
+            "japan",
+            "brazil"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "the-smartphone-era",
+      "prototypeId": "phone",
+      "startYear": 2007,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "The smartphone era",
+          "summary": "The iPhone brings the touchscreen smartphone to the mass market and changes how people use the internet.",
+          "placeLabel": "Worldwide",
+          "mediaHint": "Early touchscreen smartphone",
+          "keywords": []
+        }
+      }
+    },
+    {
+      "slug": "first-world-cup-in-africa",
+      "prototypeId": "wc-2010",
+      "startYear": 2010,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "First World Cup in Africa",
+          "summary": "South Africa hosts the first World Cup on the African continent. Spain wins its first title.",
+          "placeLabel": "South Africa",
+          "mediaHint": "Soccer City stadium, Johannesburg",
+          "keywords": ["world", "cup", "football", "soccer", "fifa", "sport", "sports", "africa", "spain"]
+        }
+      }
+    },
+    {
+      "slug": "covid-19-pandemic",
+      "prototypeId": "covid",
+      "startYear": 2020,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 1,
+      "translations": {
+        "en": {
+          "title": "COVID-19 pandemic",
+          "summary": "A new coronavirus spreads worldwide. Lockdowns, remote work and fast-developed vaccines reshape daily life.",
+          "placeLabel": "Worldwide",
+          "mediaHint": "Masked commuters, 2020",
+          "keywords": ["coronavirus", "pandemic", "covid19", "virus"]
+        }
+      }
+    },
+    {
+      "slug": "generative-ai-goes-mainstream",
+      "prototypeId": "genai",
+      "startYear": 2022,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Generative AI goes mainstream",
+          "summary": "Chatbots and image tools built on large AI models reach hundreds of millions of people within months.",
+          "placeLabel": "Worldwide",
+          "mediaHint": "Data center server racks",
+          "keywords": ["ai", "artificial", "intelligence", "chatgpt"]
+        }
+      }
+    },
+    {
+      "slug": "qatar-world-cup",
+      "prototypeId": "wc-2022",
+      "startYear": 2022,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "Qatar World Cup",
+          "summary": "The first World Cup in the Arab world and the Middle East, and the first held in November and December. Argentina beat France on penalties in the final.",
+          "placeLabel": "Qatar",
+          "mediaHint": "Lusail Stadium, Qatar",
+          "keywords": [
+            "world",
+            "cup",
+            "football",
+            "soccer",
+            "fifa",
+            "sport",
+            "sports",
+            "qatar",
+            "arab",
+            "gulf",
+            "argentina",
+            "messi"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "october-7-attack-and-gaza-war",
+      "prototypeId": "ip-2023",
+      "startYear": 2023,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 2,
+      "translations": {
+        "en": {
+          "title": "October 7 attack and Gaza war",
+          "summary": "Hamas-led militants attack southern Israel on 7 October 2023, killing about 1,200 people and taking about 250 hostages. Israel launches a war in Gaza. Gaza’s health ministry reports tens of thousands of Palestinians killed, and most of Gaza’s population is displaced.",
+          "placeLabel": "Israel and Gaza",
+          "mediaHint": "Map of Gaza and southern Israel",
+          "keywords": [
+            "israel",
+            "israeli",
+            "palestine",
+            "palestinian",
+            "gaza",
+            "hamas",
+            "october",
+            "war",
+            "conflict",
+            "hostages"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "first-48-team-world-cup",
+      "prototypeId": "wc-2026",
+      "startYear": 2026,
+      "endYear": null,
+      "isApproximate": false,
+      "importance": 3,
+      "translations": {
+        "en": {
+          "title": "First 48-team World Cup",
+          "summary": "The tournament grows to 48 teams and 104 matches, spread across three host countries for the first time.",
+          "placeLabel": "USA, Canada and Mexico",
+          "mediaHint": "MetLife Stadium, New Jersey",
+          "keywords": [
+            "world",
+            "cup",
+            "football",
+            "soccer",
+            "fifa",
+            "sport",
+            "sports",
+            "usa",
+            "america",
+            "canada",
+            "mexico"
+          ]
+        }
+      }
+    }
+  ],
+  "topics": [
+    {
+      "slug": "ancient-egypt",
+      "startYear": -3100,
+      "endYear": -30,
+      "isApproximate": true,
+      "isSensitive": false,
+      "events": [
+        "upper-and-lower-egypt-unite",
+        "great-pyramid-of-giza",
+        "tutankhamun-becomes-pharaoh",
+        "death-of-cleopatra"
+      ],
+      "translations": {
+        "en": {
+          "name": "Ancient Egypt",
+          "summary": "Three thousand years of pharaohs along the Nile, from the first united kingdom to Cleopatra and the Roman conquest.",
+          "keywords": [
+            "ancient",
+            "egypt",
+            "egyptian",
+            "egyptians",
+            "pharaoh",
+            "pharaohs",
+            "pyramid",
+            "pyramids",
+            "nile",
+            "giza",
+            "tutankhamun",
+            "cleopatra"
+          ]
+        },
+        "ar": {
+          "name": "مصر القديمة",
+          "keywords": ["مصر", "الفراعنة", "فرعون", "أهرام", "الأهرامات", "النيل", "الجيزة"]
+        }
+      }
+    },
+    {
+      "slug": "mesopotamia",
+      "startYear": -3500,
+      "endYear": -539,
+      "isApproximate": true,
+      "isSensitive": false,
+      "events": ["writing-begins-in-sumer", "code-of-hammurabi"],
+      "translations": {
+        "en": {
+          "name": "Mesopotamia",
+          "summary": "The land between the Tigris and Euphrates, where the first cities, writing and written laws appear.",
+          "keywords": [
+            "mesopotamia",
+            "sumer",
+            "sumerian",
+            "babylon",
+            "babylonian",
+            "assyria",
+            "assyrian",
+            "iraq",
+            "cuneiform",
+            "ancient"
+          ]
+        },
+        "ar": {
+          "name": "بلاد الرافدين",
+          "keywords": ["سومر", "بابل", "آشور", "العراق", "المسمارية"]
+        }
+      }
+    },
+    {
+      "slug": "ancient-greece",
+      "startYear": -800,
+      "endYear": -146,
+      "isApproximate": true,
+      "isSensitive": false,
+      "events": ["first-recorded-olympic-games", "campaigns-of-alexander"],
+      "translations": {
+        "en": {
+          "name": "Ancient Greece",
+          "summary": "City-states like Athens and Sparta, the first Olympics, democracy and philosophy, until the Roman conquest in 146 BCE.",
+          "keywords": ["ancient", "greece", "greek", "greeks", "athens", "sparta", "olympics", "alexander", "democracy"]
+        },
+        "ar": {
+          "name": "اليونان القديمة",
+          "keywords": ["الإغريق", "أثينا", "إسبرطة", "الأولمبياد", "الإسكندر"]
+        }
+      }
+    },
+    {
+      "slug": "ancient-rome",
+      "startYear": -753,
+      "endYear": 476,
+      "isApproximate": true,
+      "isSensitive": false,
+      "events": ["roman-republic-founded", "julius-caesar-assassinated", "death-of-cleopatra", "fall-of-western-rome"],
+      "translations": {
+        "en": {
+          "name": "Ancient Rome",
+          "summary": "From a small city on the Tiber to an empire around the whole Mediterranean, ending with the fall of the West in 476.",
+          "keywords": ["ancient", "rome", "roman", "romans", "empire", "republic", "caesar", "latin"]
+        },
+        "ar": {
+          "name": "روما القديمة",
+          "keywords": ["الرومان", "الرومانية", "قيصر"]
+        }
+      }
+    },
+    {
+      "slug": "islamic-golden-age",
+      "startYear": 750,
+      "endYear": 1258,
+      "isApproximate": false,
+      "isSensitive": true,
+      "events": ["baghdad-founded", "mongols-sack-baghdad"],
+      "translations": {
+        "en": {
+          "name": "Islamic Golden Age",
+          "summary": "Under the Abbasid caliphs, Baghdad becomes a world center of science, medicine, mathematics and translation.",
+          "keywords": [
+            "islamic",
+            "golden",
+            "age",
+            "abbasid",
+            "caliphate",
+            "baghdad",
+            "arab",
+            "arabic",
+            "science",
+            "islam"
+          ]
+        },
+        "ar": {
+          "name": "العصر الذهبي الإسلامي",
+          "keywords": ["العباسيون", "العباسية", "بغداد", "الخلافة", "الإسلام", "العلوم"]
+        }
+      }
+    },
+    {
+      "slug": "mongol-empire",
+      "startYear": 1206,
+      "endYear": 1368,
+      "isApproximate": false,
+      "isSensitive": false,
+      "events": ["genghis-khan-unites-the-mongols", "mongols-sack-baghdad"],
+      "translations": {
+        "en": {
+          "name": "Mongol Empire",
+          "summary": "The largest land empire in history, stretching from Korea to Eastern Europe.",
+          "keywords": ["mongol", "mongols", "mongolia", "genghis", "khan", "empire"]
+        },
+        "ar": {
+          "name": "الإمبراطورية المغولية",
+          "keywords": ["المغول", "جنكيز", "خان"]
+        }
+      }
+    },
+    {
+      "slug": "ottoman-empire",
+      "startYear": 1299,
+      "endYear": 1922,
+      "isApproximate": false,
+      "isSensitive": false,
+      "events": ["fall-of-constantinople", "world-war-i", "ottoman-empire-ends"],
+      "translations": {
+        "en": {
+          "name": "Ottoman Empire",
+          "summary": "A Turkish empire that ruled much of southeastern Europe, the Middle East and North Africa for more than six centuries.",
+          "keywords": ["ottoman", "ottomans", "turkey", "turkish", "empire", "istanbul", "constantinople", "sultan"]
+        },
+        "ar": {
+          "name": "الدولة العثمانية",
+          "keywords": ["العثمانيون", "العثمانية", "تركيا", "إسطنبول", "القسطنطينية", "السلطان"]
+        }
+      }
+    },
+    {
+      "slug": "cold-war",
+      "startYear": 1947,
+      "endYear": 1991,
+      "isApproximate": false,
+      "isSensitive": true,
+      "events": ["apollo-11-moon-landing", "fall-of-the-berlin-wall"],
+      "translations": {
+        "en": {
+          "name": "Cold War",
+          "summary": "A standoff between the United States and the Soviet Union, fought through arms races, the space race and proxy wars rather than direct battle.",
+          "keywords": ["cold", "war", "usa", "ussr", "soviet", "union", "america", "american", "russia", "nuclear"]
+        },
+        "ar": {
+          "name": "الحرب الباردة",
+          "keywords": ["الاتحاد", "السوفيتي", "أمريكا", "النووي"]
+        }
+      }
+    },
+    {
+      "slug": "israeli-palestinian-conflict",
+      "startYear": 1917,
+      "endYear": null,
+      "isApproximate": false,
+      "isSensitive": true,
+      "events": [
+        "1948-arab-israeli-war",
+        "six-day-war",
+        "october-yom-kippur-war",
+        "egypt-israel-peace-treaty",
+        "first-intifada",
+        "oslo-accords",
+        "second-intifada",
+        "october-7-attack-and-gaza-war"
+      ],
+      "translations": {
+        "en": {
+          "name": "Israeli–Palestinian conflict",
+          "summary": "A long-running conflict between Israelis and Palestinians over land, statehood, security and refugees. Its modern roots go back to the end of Ottoman rule and the British Mandate after World War I.",
+          "keywords": [
+            "israel",
+            "israeli",
+            "israelis",
+            "palestine",
+            "palestinian",
+            "palestinians",
+            "gaza",
+            "west",
+            "bank",
+            "jerusalem",
+            "arab",
+            "war",
+            "conflict",
+            "intifada"
+          ]
+        },
+        "ar": {
+          "name": "الصراع الإسرائيلي الفلسطيني",
+          "keywords": ["فلسطين", "إسرائيل", "غزة", "الضفة", "القدس", "الانتفاضة", "النكبة"]
+        }
+      }
+    },
+    {
+      "slug": "fifa-world-cup",
+      "startYear": 1930,
+      "endYear": null,
+      "isApproximate": false,
+      "isSensitive": false,
+      "events": [
+        "first-fifa-world-cup",
+        "brazil-wins-a-third-world-cup",
+        "kuwait-plays-at-the-world-cup",
+        "maradonas-world-cup",
+        "first-world-cup-in-asia",
+        "first-world-cup-in-africa",
+        "qatar-world-cup",
+        "first-48-team-world-cup"
+      ],
+      "translations": {
+        "en": {
+          "name": "FIFA World Cup",
+          "summary": "The world’s biggest football tournament, held every four years since 1930 except during World War II.",
+          "keywords": ["fifa", "world", "cup", "football", "soccer", "sport", "sports", "tournament", "mondial"]
+        },
+        "ar": {
+          "name": "كأس العالم",
+          "keywords": ["فيفا", "كرة", "القدم", "المونديال"]
+        }
+      }
+    },
+    {
+      "slug": "history-of-kuwait",
+      "startYear": 1700,
+      "endYear": null,
+      "isApproximate": true,
+      "isSensitive": false,
+      "events": [
+        "al-sabah-rule-begins-in-kuwait",
+        "anglo-kuwaiti-agreement",
+        "oil-discovered-in-kuwait",
+        "kuwaits-independence",
+        "kuwait-plays-at-the-world-cup",
+        "invasion-and-liberation-of-kuwait"
+      ],
+      "translations": {
+        "en": {
+          "name": "History of Kuwait",
+          "summary": "From a small trading and pearling port on the Gulf to an independent oil state.",
+          "keywords": ["kuwait", "kuwaiti", "gulf", "sabah", "history"]
+        },
+        "ar": {
+          "name": "تاريخ الكويت",
+          "keywords": ["الكويت", "الصباح", "الخليج"]
+        }
+      }
+    }
+  ],
+  "stories": [
+    {
+      "event": "world-war-i",
+      "locale": "en",
+      "layout": "full",
+      "dek": null,
+      "footnote": "Figures are historians’ estimates and vary by source.",
+      "startDate": "1914-07-28",
+      "endDate": "1918-11-11",
+      "heroHint": "Soldiers in a front-line trench on the Western Front, 1916",
+      "stats": [
+        {
+          "value": "≈65M",
+          "description": "soldiers mobilized"
+        },
+        {
+          "value": "≈9M",
+          "description": "soldiers killed"
+        },
+        {
+          "value": "≈20M",
+          "description": "total deaths, military and civilian"
+        },
+        {
+          "value": "4",
+          "description": "empires collapsed"
+        }
+      ],
+      "keyDates": [
+        {
+          "date": "1914-06-28",
+          "label": "Archduke shot in Sarajevo",
+          "chapter": 1
+        },
+        {
+          "date": "1914-08-04",
+          "label": "Britain enters the war",
+          "chapter": 2
+        },
+        {
+          "date": "1914-09-06",
+          "label": "First Battle of the Marne",
+          "chapter": 3
+        },
+        {
+          "date": "1915-04-25",
+          "label": "Gallipoli landings",
+          "chapter": 4
+        },
+        {
+          "date": "1916-07-01",
+          "label": "Battle of the Somme begins",
+          "chapter": 3
+        },
+        {
+          "date": "1917-04-06",
+          "label": "United States declares war",
+          "chapter": 5
+        },
+        {
+          "date": "1918-11-11",
+          "label": "Armistice",
+          "chapter": 6
+        },
+        {
+          "date": "1919-06-28",
+          "label": "Treaty of Versailles",
+          "chapter": 7
+        }
+      ],
+      "chapters": [
+        {
+          "title": "The spark",
+          "period": "28 June 1914",
+          "paragraphs": [
+            "In Sarajevo, a 19-year-old Bosnian Serb named Gavrilo Princip shoots Archduke Franz Ferdinand, heir to the Austro-Hungarian throne, and his wife Sophie.",
+            "Austria-Hungary blames Serbia. With Germany’s backing, it sends Serbia an ultimatum written to be rejected."
+          ],
+          "figure": {
+            "kind": "photo",
+            "caption": "The Archduke and Sophie in Sarajevo, minutes before the attack"
+          },
+          "showsSides": false
+        },
+        {
+          "title": "Alliances pull everyone in",
+          "period": "July – November 1914",
+          "paragraphs": [
+            "Austria-Hungary declares war on Serbia on 28 July. Russia mobilizes to protect Serbia. Germany declares war on Russia on 1 August and on France on 3 August, then invades neutral Belgium to reach Paris. Britain declares war on Germany on 4 August.",
+            "Within a week, a Balkan crisis has become a European war. In late 1914 the Ottoman Empire joins Germany’s side and the war reaches the Middle East."
+          ],
+          "figure": {
+            "kind": "map",
+            "caption": "Europe’s alliances, August 1914"
+          },
+          "showsSides": true
+        },
+        {
+          "title": "Trenches and stalemate",
+          "period": "1914 – 1916",
+          "paragraphs": [
+            "France and Britain stop the German advance at the First Battle of the Marne in September 1914. Both sides dig in, and soon a line of trenches runs about 700 km from the North Sea to Switzerland.",
+            "Attacks across no man’s land cost huge numbers of lives for very little ground. At Verdun in 1916, French and German armies fight for about 300 days. On the first day of the Somme, 1 July 1916, the British Army suffers about 57,000 casualties, the worst day in its history."
+          ],
+          "figure": {
+            "kind": "photo",
+            "caption": "Aerial photo of trench lines on the Somme"
+          },
+          "showsSides": false
+        },
+        {
+          "title": "A world war",
+          "period": "1915 – 1918",
+          "paragraphs": [
+            "Fighting spreads far beyond Europe. At Gallipoli in 1915, Allied troops try to knock the Ottoman Empire out of the war and withdraw after eight months.",
+            "In Mesopotamia (today’s Iraq), a British-Indian army is besieged at Kut and surrenders in April 1916. In June 1916, Sharif Hussein of Mecca launches the Arab Revolt against Ottoman rule with British support. Meanwhile Britain and France secretly agree, in the Sykes–Picot Agreement, how to divide the region after the war."
+          ],
+          "figure": {
+            "kind": "map",
+            "caption": "Fronts in the Middle East, 1915–1918"
+          },
+          "showsSides": false
+        },
+        {
+          "title": "1917, the turning point",
+          "period": "1917 – March 1918",
+          "paragraphs": [
+            "German submarines sink merchant ships without warning, and a secret German offer of an alliance to Mexico, the Zimmermann Telegram, is exposed. The United States declares war on Germany on 6 April 1917.",
+            "In Russia, revolution topples the tsar. The new Bolshevik government signs a separate peace with Germany at Brest-Litovsk in March 1918."
+          ],
+          "figure": {
+            "kind": "photo",
+            "caption": "American troops arriving in France, 1917"
+          },
+          "showsSides": false
+        },
+        {
+          "title": "The end",
+          "period": "March – November 1918",
+          "paragraphs": [
+            "Germany moves its eastern armies west for a final Spring Offensive in March 1918 and comes close to Paris. The Allies stop it, then launch the Hundred Days Offensive on 8 August.",
+            "Bulgaria and the Ottoman Empire sign armistices, Austria-Hungary collapses, and Kaiser Wilhelm II abdicates. The guns fall silent at 11 a.m. on 11 November 1918."
+          ],
+          "figure": {
+            "kind": "photo",
+            "caption": "Crowds celebrate the Armistice, 11 November 1918"
+          },
+          "showsSides": false
+        },
+        {
+          "title": "The aftermath",
+          "period": "1919 – 1923",
+          "paragraphs": [
+            "The Treaty of Versailles is signed on 28 June 1919, five years to the day after Sarajevo. It blames Germany for the war and demands heavy reparations.",
+            "The German, Austro-Hungarian, Russian and Ottoman empires are gone. New states appear in Europe, and Britain and France take control of former Ottoman lands as League of Nations mandates, drawing borders that still shape the Middle East. Anger over the peace helps set the stage for World War II twenty years later."
+          ],
+          "figure": {
+            "kind": "photo",
+            "caption": "Signing of the treaty in the Hall of Mirrors, Versailles"
+          },
+          "showsSides": false
+        }
+      ],
+      "sides": [
+        {
+          "name": "Allies",
+          "members": [
+            {
+              "name": "France",
+              "note": null
+            },
+            {
+              "name": "British Empire",
+              "note": null
+            },
+            {
+              "name": "Russia",
+              "note": "to 1918"
+            },
+            {
+              "name": "Serbia",
+              "note": null
+            },
+            {
+              "name": "Belgium",
+              "note": null
+            },
+            {
+              "name": "Japan",
+              "note": null
+            },
+            {
+              "name": "Italy",
+              "note": "from 1915"
+            },
+            {
+              "name": "Arab Revolt",
+              "note": "from 1916"
+            },
+            {
+              "name": "United States",
+              "note": "from 1917"
+            }
+          ]
+        },
+        {
+          "name": "Central Powers",
+          "members": [
+            {
+              "name": "Germany",
+              "note": null
+            },
+            {
+              "name": "Austria-Hungary",
+              "note": null
+            },
+            {
+              "name": "Ottoman Empire",
+              "note": "from 1914"
+            },
+            {
+              "name": "Bulgaria",
+              "note": "from 1915"
+            }
+          ]
+        }
+      ],
+      "people": [
+        {
+          "initials": "FF",
+          "name": "Franz Ferdinand",
+          "description": "Heir to Austria-Hungary. His murder started the crisis."
+        },
+        {
+          "initials": "W",
+          "name": "Kaiser Wilhelm II",
+          "description": "German emperor. Abdicated in November 1918."
+        },
+        {
+          "initials": "N",
+          "name": "Tsar Nicholas II",
+          "description": "Russia’s last tsar. Abdicated in March 1917."
+        },
+        {
+          "initials": "MK",
+          "name": "Mustafa Kemal",
+          "description": "Ottoman commander at Gallipoli. Later founded modern Turkey."
+        },
+        {
+          "initials": "SH",
+          "name": "Sharif Hussein",
+          "description": "Emir of Mecca. Launched the Arab Revolt in 1916."
+        },
+        {
+          "initials": "WW",
+          "name": "Woodrow Wilson",
+          "description": "US president. Proposed the Fourteen Points for peace."
+        },
+        {
+          "initials": "GC",
+          "name": "Georges Clemenceau",
+          "description": "French prime minister at the Versailles talks."
+        }
+      ],
+      "related": ["russian-revolution", "ottoman-empire-ends", "wall-street-crash", "world-war-ii"]
+    }
+  ]
+}

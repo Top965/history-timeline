@@ -1,0 +1,549 @@
+<title>History Timeline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument-like scrubber. Fixed playhead in the middle, history slides under it; story opens as a full sheet. */
+:root{
+  --bg:#edf0f3; --surface:#ffffff; --ink:#15202b; --muted:#56636f; --line:#cdd5dd; --track:#e2e7ec;
+  --accent:#8a6516; --accent-ink:#ffffff; --accent-soft:#f2e6c9;
+  --e1:#d9cfb8; --e2:#c9d6cf; --e3:#d3cbd9; --e4:#cbd5e2; --e5:#dccfc4; --e6:#cfdcd6;
+  --f-display:"Bodoni Moda", "Didot", Georgia, serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141b; --surface:#151d27; --ink:#e7ecf1; --muted:#95a2af; --line:#273341; --track:#111922;
+  --accent:#d8b15c; --accent-ink:#1a1407; --accent-soft:#2b2416;
+  --e1:#3a3426; --e2:#243530; --e3:#2f2a38; --e4:#24303f; --e5:#3a2f27; --e6:#233631;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --surface:#151d27; --ink:#e7ecf1; --muted:#95a2af; --line:#273341; --track:#111922;
+  --accent:#d8b15c; --accent-ink:#1a1407; --accent-soft:#2b2416;
+  --e1:#3a3426; --e2:#243530; --e3:#2f2a38; --e4:#24303f; --e5:#3a2f27; --e6:#233631;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 40px;display:grid;gap:18px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.01em}
+.brand small{display:block;font-family:var(--f-body);font-weight:400;font-size:13px;color:var(--muted);letter-spacing:0}
+.goto{display:flex;gap:6px;position:relative;flex:1 1 320px;max-width:460px;min-width:0}
+.results{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:15;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:grid;gap:2px;max-height:360px;overflow-y:auto}
+.res{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:center;text-align:left;padding:9px 10px;border-radius:8px;border:0;background:none;cursor:pointer;min-width:0}
+.res[aria-selected="true"],.res:hover{background:var(--accent-soft)}
+.res .k{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.res .n{font-weight:600;min-width:0}
+.res .n small{display:block;font-weight:400;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.res-empty{padding:10px;color:var(--muted);font-size:14px}
+.focus-card{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:start;padding:14px 16px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent)}
+.focus-card .fk{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.focus-card h3{grid-column:1;margin:0;font-family:var(--f-display);font-size:24px;line-height:1.1}
+.focus-card h3 small{font-family:var(--f-mono);font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
+.focus-card p{grid-column:1/-1;margin:2px 0 0;max-width:65ch;font-size:14px}
+.focus-card .btn{grid-column:2;grid-row:1/3}
+.focus{position:absolute;top:24px;height:154px;background:var(--accent);opacity:.1;border-left:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none}
+.pin.hl{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pin.hl .d{background:var(--accent-ink)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent)}50%{box-shadow:0 0 0 6px transparent}}
+.pin.hl{animation:pulse 1.6s ease-in-out 3}
+@media (prefers-reduced-motion: reduce){.pin.hl{animation:none}}
+.goto input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-family:var(--f-mono);font-size:14px}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+
+/* Readout */
+.readout{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.year{font-family:var(--f-mono);font-weight:500;font-size:clamp(40px,10vw,64px);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.era-name{font-family:var(--f-display);font-size:20px;color:var(--accent)}
+.hint{color:var(--muted);font-size:13px;width:100%}
+
+/* Era chips */
+.eras{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.eras::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:13px;white-space:nowrap}
+.chip .r{font-family:var(--f-mono);color:var(--muted);font-size:11px;margin-left:6px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"] .r{color:inherit;opacity:.7}
+
+/* Timeline instrument */
+.instrument{position:relative;border:1px solid var(--line);border-radius:14px;background:var(--track);overflow:hidden}
+#tl{position:relative;height:236px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#tl.dragging{cursor:grabbing}
+.band{position:absolute;top:0;height:24px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;border-right:1px solid var(--bg)}
+.axis{position:absolute;left:0;right:0;top:178px;height:1px;background:var(--ink);opacity:.5}
+.tick{position:absolute;top:178px;width:1px;height:8px;background:var(--muted)}
+.tick.minor{height:4px;opacity:.6}
+.tlabel{position:absolute;top:190px;transform:translateX(-50%);font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.range{position:absolute;top:172px;height:5px;border-radius:3px;background:var(--accent);opacity:.55}
+.pin{position:absolute;display:flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;transform:translateX(-12px)}
+.pin .d{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.pin.imp1{font-weight:600;border-color:var(--accent)}
+.pin:hover{background:var(--accent-soft)}
+.pin .stem{position:absolute;left:11px;top:30px;width:1px;background:var(--accent);opacity:.6;pointer-events:none}
+.dot{position:absolute;top:174px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--accent);border:2px solid var(--track);cursor:pointer;padding:0}
+.today{position:absolute;top:24px;bottom:58px;width:0;border-left:1px dashed var(--muted);pointer-events:none}
+.today span{position:absolute;top:2px;left:4px;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.playhead{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:var(--ink);pointer-events:none;z-index:3}
+.playhead::before{content:"";position:absolute;top:24px;left:-6px;border:7px solid transparent;border-top-color:var(--ink)}
+.zoom{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;z-index:4}
+.zoom button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;line-height:1}
+.scale{position:absolute;left:10px;bottom:12px;font-family:var(--f-mono);font-size:11px;color:var(--muted);z-index:4}
+
+/* Around list */
+.around h2{font-family:var(--f-display);font-weight:500;font-size:22px;margin:0 0 10px}
+.around h2 span{font-family:var(--f-mono);font-size:18px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;min-width:0}
+.item:hover{border-color:var(--accent)}
+.item .y{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:68px;font-variant-numeric:tabular-nums}
+.item .t{font-weight:600;min-width:0}
+.item .p{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.item .go{color:var(--accent);font-size:18px}
+.item.full .t::after{content:"Full story";margin-left:8px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;vertical-align:2px}
+.empty{color:var(--muted)}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+
+/* Story sheet */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-bar{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line)}
+.sheet-bar .in{max-width:760px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.crumb{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+article{max-width:760px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:24px 60px;display:grid;gap:22px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+article h1{font-family:var(--f-display);font-weight:700;font-size:clamp(36px,8vw,56px);line-height:1.02;margin:6px 0 10px;text-wrap:balance}
+.dek{font-size:18px;color:var(--muted);max-width:60ch;margin:0}
+.ph{margin:0;display:grid;gap:6px}
+.ph .frame{aspect-ratio:16/9;max-width:100%;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;align-content:center;gap:8px;color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+  background:repeating-linear-gradient(135deg,var(--track) 0 10px,var(--surface) 10px 20px)}
+.ph .frame svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.5}
+.ph figcaption{font-size:13px;color:var(--muted)}
+.ph figcaption b{color:var(--ink);font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border-top:2px solid var(--accent);padding-top:8px}
+.stat b{display:block;font-family:var(--f-mono);font-weight:500;font-size:26px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.dates{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.date{flex:none;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;width:150px}
+.date b{display:block;font-family:var(--f-mono);font-weight:500;font-size:12px;color:var(--accent)}
+.date span{font-size:13px}
+h3.sec{font-family:var(--f-display);font-weight:500;font-size:24px;margin:8px 0 0}
+.chapter{display:grid;gap:10px;scroll-margin-top:70px}
+.chapter .num{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.chapter h2{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1.1;margin:0;text-wrap:balance}
+.chapter .when{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.chapter p{margin:0;max-width:65ch}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.sides{grid-template-columns:1fr}}
+.side{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px}
+.side h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.side ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:14px}
+.side li small{color:var(--muted);font-family:var(--f-mono);font-size:11px;margin-left:6px}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.person{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.avatar{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-family:var(--f-display);font-weight:700;font-size:16px;border:1px solid var(--line)}
+.person b{display:block;font-size:14px}
+.person span{font-size:13px;color:var(--muted)}
+.related{display:flex;flex-wrap:wrap;gap:8px}
+.related .chip .r{margin-left:6px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:14px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">History Timeline <span style="font-family:var(--f-body);font-weight:600;font-size:16px;color:var(--accent)" lang="ar">خط الزمن</span><small>Travel through history. Drag the timeline, tap any event.</small></div>
+    <form class="goto" id="goto" role="search">
+      <label for="yr" style="position:absolute;left:-9999px">Search history</label>
+      <input id="yr" type="search" placeholder="Search: world cup, egypt pyramids, 1969…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list">
+      <button class="btn primary" type="submit">Go</button>
+      <div class="results" id="results" role="listbox" hidden></div>
+    </form>
+  </header>
+
+  <div class="readout" aria-live="polite">
+    <div class="year" id="year">1900</div>
+    <div class="era-name" id="eraName">Modern</div>
+    <div class="hint">Drag left or right to move in time. Scroll, pinch or use + and − to zoom from eras down to single years.</div>
+  </div>
+
+  <nav class="eras" id="eras" aria-label="Jump to era"></nav>
+
+  <div class="focus-card" id="focusCard" hidden>
+    <div class="fk">Focused timeline</div>
+    <h3 id="fcTitle"></h3>
+    <button class="btn" id="fcClear">Clear</button>
+    <p id="fcText"></p>
+  </div>
+
+  <div class="instrument">
+    <div id="tl" tabindex="0" aria-label="Timeline. Use arrow keys to move, plus and minus to zoom."></div>
+    <div class="playhead"></div>
+    <div class="scale" id="scale"></div>
+    <div class="zoom">
+      <button id="zout" aria-label="Zoom out">−</button>
+      <button id="zin" aria-label="Zoom in">+</button>
+    </div>
+  </div>
+
+  <section class="around">
+    <h2 id="aroundH">Around <span id="aroundYear">1900</span></h2>
+    <div class="list" id="list"></div>
+  </section>
+
+  <p class="note">Prototype. Striped boxes mark where real archive photos and maps load in the full app (from Wikimedia Commons). World War I shows the full story layout; other events show the short version.</p>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="stTitle">
+  <div class="sheet-bar"><div class="in">
+    <button class="btn" id="back">← Back to timeline</button>
+    <span class="crumb" id="crumb"></span>
+  </div></div>
+  <article id="story"></article>
+</div>
+
+<script>
+const ERAS=[
+  {id:'ancient',n:'Ancient',a:-3600,b:-500,c:'--e1'},
+  {id:'classical',n:'Classical',a:-500,b:500,c:'--e2'},
+  {id:'medieval',n:'Medieval',a:500,b:1450,c:'--e3'},
+  {id:'early',n:'Early Modern',a:1450,b:1789,c:'--e4'},
+  {id:'modern',n:'Modern',a:1789,b:1945,c:'--e5'},
+  {id:'contemporary',n:'Contemporary',a:1945,b:2030,c:'--e6'}
+];
+const E=[
+ {id:'writing',y:-3200,c:1,t:'Writing begins in Sumer',imp:1,pl:'Mesopotamia (Iraq)',s:'Scribes in cities like Uruk press wedge-shaped marks into clay tablets to keep records of grain and goods. Cuneiform is one of the first writing systems, and it marks the start of recorded history.',img:'Clay tablet with cuneiform signs'},
+ {id:'pyramid',y:-2560,c:1,t:'Great Pyramid of Giza',imp:1,pl:'Giza, Egypt',s:'Built as a tomb for the pharaoh Khufu, it remained the tallest human-made structure on Earth for roughly 3,800 years.',img:'The Great Pyramid on the Giza plateau'},
+ {id:'hammurabi',y:-1754,c:1,t:'Code of Hammurabi',imp:2,pl:'Babylon (Iraq)',s:'King Hammurabi of Babylon has 282 laws carved on a basalt stele. It is one of the oldest written law codes known.',img:'The stele of Hammurabi'},
+ {id:'olympics',y:-776,t:'First recorded Olympic Games',imp:2,pl:'Olympia, Greece',s:'The earliest recorded Games are held at Olympia. Greeks later count years in four-year Olympiads starting from this date.',img:'Ruins of the stadium at Olympia'},
+ {id:'rome-rep',y:-509,t:'Roman Republic founded',imp:3,pl:'Rome',s:'Romans expel their last king and set up a republic run by elected officials and a Senate.',img:'Ruins of the Roman Forum'},
+ {id:'alexander',y:-334,end:-323,t:'Campaigns of Alexander',imp:2,pl:'Greece to India',s:'Alexander of Macedon defeats the Persian Empire and marches as far as the Indus River, spreading Greek culture across the Middle East.',img:'The Alexander Mosaic, Pompeii'},
+ {id:'qin',y:-221,t:'Qin unifies China',imp:2,pl:'China',s:'Qin Shi Huang conquers the rival states and becomes China’s first emperor. He standardizes writing, coins and measures.',img:'The Terracotta Army, Xi’an'},
+ {id:'caesar',y:-44,t:'Julius Caesar assassinated',imp:2,pl:'Rome',s:'Senators stab Caesar on the Ides of March. The civil wars that follow end the Republic and bring Augustus to power as the first emperor.',img:'Site of the Theatre of Pompey, Rome'},
+ {id:'rome-fall',y:476,t:'Fall of Western Rome',imp:1,pl:'Italy',s:'The Germanic leader Odoacer removes Romulus Augustulus, the last western emperor. The eastern half continues as the Byzantine Empire for almost 1,000 more years.',img:'Coin of Romulus Augustulus'},
+ {id:'hijra',y:622,t:'The Hijra',imp:1,pl:'Mecca to Medina',s:'The Prophet Muhammad migrates from Mecca to Medina. This year becomes year 1 of the Islamic (Hijri) calendar.',img:'Masjid an-Nabawi, Medina'},
+ {id:'baghdad',y:762,t:'Baghdad founded',imp:2,pl:'Iraq',s:'The Abbasid caliph al-Mansur builds a round city on the Tigris. Baghdad becomes a world center of science, translation and trade.',img:'Plan of the Round City of Baghdad'},
+ {id:'hastings',y:1066,t:'Norman conquest of England',imp:3,pl:'England',s:'William of Normandy wins the Battle of Hastings and is crowned king of England.',img:'Detail of the Bayeux Tapestry'},
+ {id:'genghis',y:1206,t:'Genghis Khan unites the Mongols',imp:2,pl:'Mongolia',s:'Temüjin is proclaimed Genghis Khan. His armies go on to build the largest land empire in history.',img:'Mongolian steppe'},
+ {id:'baghdad-fall',y:1258,t:'Mongols sack Baghdad',imp:2,pl:'Iraq',s:'Hulagu Khan’s army captures Baghdad and kills the caliph al-Musta’sim, ending the Abbasid golden age in the city.',img:'Persian manuscript of the siege of Baghdad'},
+ {id:'plague',y:1347,end:1351,t:'The Black Death',imp:1,pl:'Asia, Europe, Middle East',s:'Plague spreads along trade routes and kills an estimated third or more of Europe’s population within four years.',img:'Medieval plague manuscript illustration'},
+ {id:'press',y:1440,c:1,t:'Gutenberg’s printing press',imp:1,pl:'Mainz, Germany',s:'Johannes Gutenberg develops movable-type printing in Europe. Books become cheaper and ideas spread faster than ever before.',img:'A page of the Gutenberg Bible'},
+ {id:'constantinople',y:1453,t:'Fall of Constantinople',imp:1,pl:'Istanbul',s:'Ottoman sultan Mehmed II captures Constantinople, ending the Byzantine Empire. The city becomes the Ottoman capital.',img:'The Theodosian Walls, Istanbul'},
+ {id:'columbus',y:1492,t:'Columbus reaches the Americas',imp:1,pl:'Caribbean',s:'Christopher Columbus lands in the Bahamas, beginning lasting contact between Europe and the Americas.',img:'Replica of the Santa María'},
+ {id:'reformation',y:1517,t:'Protestant Reformation',imp:2,pl:'Wittenberg, Germany',s:'Martin Luther publishes his 95 Theses, starting a lasting split in Western Christianity.',img:'Castle Church, Wittenberg'},
+ {id:'copernicus',y:1543,t:'Copernicus: Sun at the center',imp:3,pl:'Poland',s:'Nicolaus Copernicus publishes his model of the Earth orbiting the Sun.',img:'Copernicus’s diagram of the solar system'},
+ {id:'newton',y:1687,t:'Newton’s Principia',imp:3,pl:'England',s:'Isaac Newton publishes his laws of motion and universal gravitation.',img:'First edition of the Principia'},
+ {id:'kuwait-sabah',y:1752,c:1,t:'Al-Sabah rule begins in Kuwait',imp:2,pl:'Kuwait',s:'Kuwait’s families choose Sabah bin Jaber as their leader, beginning the rule of the Al-Sabah family.',img:'Dhows in the old harbor of Kuwait Town'},
+ {id:'industrial',y:1760,end:1840,c:1,t:'Industrial Revolution',imp:1,pl:'Britain, then the world',s:'Steam power, factories and railways change how people work and live, starting in Britain and spreading worldwide.',img:'Steam engine in a cotton mill'},
+ {id:'usa',y:1776,t:'US Declaration of Independence',imp:2,pl:'Philadelphia',s:'Thirteen American colonies declare independence from Britain.',img:'The Declaration of Independence manuscript'},
+ {id:'french-rev',y:1789,end:1799,t:'French Revolution',imp:1,pl:'France',s:'Parisians storm the Bastille. The monarchy falls, and ideas of rights and citizenship spread across Europe.',img:'Painting of the storming of the Bastille'},
+ {id:'waterloo',y:1815,t:'Battle of Waterloo',imp:3,pl:'Belgium',s:'Napoleon is defeated by British and Prussian armies, ending his rule.',img:'The Waterloo battlefield'},
+ {id:'suez',y:1869,t:'Suez Canal opens',imp:2,pl:'Egypt',s:'The canal links the Mediterranean and the Red Sea, cutting thousands of kilometers off the sea route from Europe to Asia.',img:'Ships at the canal’s opening, 1869'},
+ {id:'kuwait-1899',y:1899,t:'Anglo-Kuwaiti Agreement',imp:3,pl:'Kuwait',s:'Sheikh Mubarak Al-Sabah signs an agreement that places Kuwait under British protection.',img:'Portrait of Sheikh Mubarak Al-Sabah'},
+ {id:'flight',y:1903,t:'First powered flight',imp:2,pl:'Kitty Hawk, USA',s:'Orville and Wilbur Wright fly the first powered, controlled airplane. The first flight lasts 12 seconds.',img:'The Wright Flyer, 17 December 1903'},
+ {id:'ww1',y:1914,end:1918,t:'World War I',imp:1,pl:'Europe, Middle East, Africa, Asia',s:'Four years of war that killed millions, destroyed four empires and redrew the map of Europe and the Middle East.',full:1},
+ {id:'russian-rev',y:1917,t:'Russian Revolution',imp:2,pl:'Russia',s:'Revolutions in February and October end the rule of the tsars and bring the Bolsheviks, led by Lenin, to power.',img:'Street protest in Petrograd, 1917'},
+ {id:'ottoman-end',y:1922,t:'Ottoman Empire ends',imp:3,pl:'Turkey',s:'The sultanate is abolished after more than six centuries. The Republic of Turkey is declared the following year.',img:'Dolmabahçe Palace, Istanbul'},
+ {id:'crash',y:1929,t:'Wall Street Crash',imp:2,pl:'New York',s:'The US stock market collapses, and the Great Depression spreads around the world.',img:'Crowds outside the New York Stock Exchange'},
+ {id:'kuwait-oil',y:1938,t:'Oil discovered in Kuwait',imp:2,pl:'Burgan field, Kuwait',s:'Drillers strike oil at Burgan, one of the largest oil fields in the world. Exports begin in 1946.',img:'The Burgan No. 1 well'},
+ {id:'ww2',y:1939,end:1945,t:'World War II',imp:1,pl:'Worldwide',s:'The deadliest conflict in history, fought between the Allies and the Axis powers. It ends with the surrender of Germany and Japan in 1945.',img:'Allied landing craft, Normandy, 1944'},
+ {id:'un',y:1945,t:'United Nations founded',imp:3,pl:'San Francisco',s:'Fifty nations sign the UN Charter in June 1945 to prevent another world war.',img:'Signing of the UN Charter'},
+ {id:'kuwait-ind',y:1961,t:'Kuwait’s independence',imp:2,pl:'Kuwait',s:'On 19 June 1961 Kuwait ends the 1899 agreement with Britain and becomes fully independent.',img:'The flag of Kuwait'},
+ {id:'moon',y:1969,t:'Apollo 11 Moon landing',imp:1,pl:'The Moon',s:'Neil Armstrong and Buzz Aldrin become the first people to walk on the Moon.',img:'Bootprint in lunar soil'},
+ {id:'berlin',y:1989,t:'Fall of the Berlin Wall',imp:1,pl:'Berlin',s:'East Germany opens its border. The Cold War division of Europe begins to end.',img:'Crowds on the Berlin Wall, November 1989'},
+ {id:'kuwait-lib',y:1990,end:1991,t:'Invasion and liberation of Kuwait',imp:2,pl:'Kuwait',s:'Iraq invades Kuwait on 2 August 1990. A US-led coalition liberates the country on 26 February 1991.',img:'Kuwait Towers'},
+ {id:'web',y:1991,t:'World Wide Web goes public',imp:2,pl:'CERN, Switzerland',s:'Tim Berners-Lee’s World Wide Web opens to the public, bringing the internet to everyday users.',img:'The first web server at CERN'},
+ {id:'sept11',y:2001,t:'September 11 attacks',imp:2,pl:'New York and Washington',s:'Hijacked planes strike the World Trade Center and the Pentagon, killing nearly 3,000 people.',img:'Tribute in Light memorial'},
+ {id:'phone',y:2007,t:'The smartphone era',imp:3,pl:'Worldwide',s:'The iPhone brings the touchscreen smartphone to the mass market and changes how people use the internet.',img:'Early touchscreen smartphone'},
+ {id:'covid',y:2020,t:'COVID-19 pandemic',imp:1,pl:'Worldwide',s:'A new coronavirus spreads worldwide. Lockdowns, remote work and fast-developed vaccines reshape daily life.',img:'Masked commuters, 2020'},
+ {id:'genai',y:2022,t:'Generative AI goes mainstream',imp:2,pl:'Worldwide',s:'Chatbots and image tools built on large AI models reach hundreds of millions of people within months.',img:'Data center server racks'},
+ {id:'wc-1930',y:1930,t:'First FIFA World Cup',imp:2,pl:'Montevideo, Uruguay',s:'Thirteen teams play the first World Cup. Hosts Uruguay beat Argentina 4–2 in the final.',img:'Estadio Centenario, Montevideo, 1930',k:'world cup football soccer fifa sport sports uruguay'},
+ {id:'wc-1970',y:1970,t:'Brazil wins a third World Cup',imp:3,pl:'Mexico',s:'Pelé’s Brazil win in Mexico, become the first team to lift the trophy three times and keep the original Jules Rimet trophy. It is also the first World Cup broadcast in color.',img:'Estadio Azteca, Mexico City',k:'world cup football soccer fifa sport sports brazil pele'},
+ {id:'wc-1982',y:1982,t:'Kuwait plays at the World Cup',imp:3,pl:'Spain',s:'Kuwait qualifies for its first and only World Cup so far, playing Czechoslovakia, France and England. Italy wins the tournament.',img:'Kuwait national team, 1982',k:'world cup football soccer fifa sport sports kuwait spain'},
+ {id:'wc-1986',y:1986,t:'Maradona’s World Cup',imp:3,pl:'Mexico',s:'Diego Maradona leads Argentina to the title. His two goals against England, the “Hand of God” and a solo run past five players, become legend.',img:'Estadio Azteca, 1986',k:'world cup football soccer fifa sport sports argentina maradona'},
+ {id:'wc-2002',y:2002,t:'First World Cup in Asia',imp:3,pl:'South Korea and Japan',s:'The first World Cup held in Asia and the first with two host countries. Brazil wins a record fifth title.',img:'Yokohama International Stadium',k:'world cup football soccer fifa sport sports asia korea japan brazil'},
+ {id:'wc-2010',y:2010,t:'First World Cup in Africa',imp:3,pl:'South Africa',s:'South Africa hosts the first World Cup on the African continent. Spain wins its first title.',img:'Soccer City stadium, Johannesburg',k:'world cup football soccer fifa sport sports africa spain'},
+ {id:'wc-2022',y:2022,t:'Qatar World Cup',imp:2,pl:'Qatar',s:'The first World Cup in the Arab world and the Middle East, and the first held in November and December. Argentina beat France on penalties in the final.',img:'Lusail Stadium, Qatar',k:'world cup football soccer fifa sport sports qatar arab gulf argentina messi'},
+ {id:'wc-2026',y:2026,t:'First 48-team World Cup',imp:3,pl:'USA, Canada and Mexico',s:'The tournament grows to 48 teams and 104 matches, spread across three host countries for the first time.',img:'MetLife Stadium, New Jersey',k:'world cup football soccer fifa sport sports usa america canada mexico'},
+ {id:'egypt-unify',y:-3100,c:1,t:'Upper and Lower Egypt unite',imp:2,pl:'Egypt',s:'Tradition credits King Narmer (Menes) with joining Upper and Lower Egypt into one kingdom, the start of the age of the pharaohs.',img:'The Narmer Palette'},
+ {id:'tut',y:-1332,c:1,t:'Tutankhamun becomes pharaoh',imp:3,pl:'Egypt',s:'The boy king rules for about ten years. His nearly intact tomb, found in 1922, makes him the best-known pharaoh today.',img:'Tutankhamun’s golden mask'},
+ {id:'cleopatra',y:-30,t:'Death of Cleopatra',imp:3,pl:'Alexandria, Egypt',s:'Cleopatra VII, the last ruler of Ptolemaic Egypt, dies after her defeat by Octavian. Egypt becomes a Roman province.',img:'Bust of Cleopatra VII'},
+ {id:'ip-1948',y:1948,end:1949,t:'1948 Arab–Israeli War',imp:2,pl:'Israel and Palestine',s:'Israel declares independence on 14 May 1948 as the British Mandate ends, and neighboring Arab states go to war. About 700,000 Palestinians flee or are expelled from their homes, an event Palestinians call the Nakba (“catastrophe”).',img:'Map of the 1949 armistice lines',k:'israel israeli palestine palestinian nakba independence arab war conflict'},
+ {id:'ip-1967',y:1967,t:'Six-Day War',imp:2,pl:'Middle East',s:'In six days in June 1967, Israel defeats Egypt, Jordan and Syria and takes control of the West Bank, East Jerusalem, Gaza, the Sinai Peninsula and the Golan Heights.',img:'Map of territories before and after June 1967',k:'israel israeli palestine palestinian egypt jordan syria jerusalem gaza west bank arab war conflict'},
+ {id:'ip-1973',y:1973,t:'October (Yom Kippur) War',imp:3,pl:'Sinai and Golan Heights',s:'Egypt and Syria launch a surprise attack in October 1973 to win back land lost in 1967. The war also triggers an Arab oil embargo against Western supporters of Israel.',img:'Egyptian forces crossing the Suez Canal',k:'israel israeli egypt syria arab war conflict oil embargo'},
+ {id:'ip-1979',y:1979,t:'Egypt–Israel peace treaty',imp:3,pl:'Washington, D.C.',s:'Egypt becomes the first Arab state to sign a peace treaty with Israel, following the 1978 Camp David Accords. Israel returns the Sinai by 1982.',img:'Signing of the peace treaty, March 1979',k:'israel israeli egypt peace camp david sadat begin arab conflict'},
+ {id:'ip-1987',y:1987,end:1993,t:'First Intifada',imp:3,pl:'Gaza and West Bank',s:'A Palestinian uprising against Israeli occupation begins in Gaza in December 1987 and spreads to the West Bank.',img:'Street in Gaza, 1988',k:'israel israeli palestine palestinian intifada uprising gaza west bank conflict'},
+ {id:'ip-1993',y:1993,t:'Oslo Accords',imp:3,pl:'Washington, D.C.',s:'Israel and the Palestine Liberation Organization recognize each other and agree to limited Palestinian self-rule, creating the Palestinian Authority.',img:'Signing ceremony at the White House, 1993',k:'israel israeli palestine palestinian plo oslo peace arafat rabin conflict'},
+ {id:'ip-2000',y:2000,end:2005,t:'Second Intifada',imp:3,pl:'Israel, Gaza and West Bank',s:'Peace talks collapse and a second, more violent uprising begins, with suicide bombings in Israel and Israeli military operations in the West Bank and Gaza.',img:'Separation barrier in the West Bank',k:'israel israeli palestine palestinian intifada uprising gaza west bank conflict'},
+ {id:'ip-2023',y:2023,t:'October 7 attack and Gaza war',imp:2,pl:'Israel and Gaza',s:'Hamas-led militants attack southern Israel on 7 October 2023, killing about 1,200 people and taking about 250 hostages. Israel launches a war in Gaza. Gaza’s health ministry reports tens of thousands of Palestinians killed, and most of Gaza’s population is displaced.',img:'Map of Gaza and southern Israel',k:'israel israeli palestine palestinian gaza hamas october war conflict hostages'}
+];
+E.sort((a,b)=>a.y-b.y);
+const BY=Object.fromEntries(E.map(e=>[e.id,e]));
+const TODAY=2026;
+const KW={pyramid:'pyramids giza khufu pharaoh egyptian ancient',writing:'cuneiform sumerian iraq ancient',hijra:'islam islamic muhammad prophet hijri calendar',hammurabi:'law babylonian iraq',
+ 'kuwait-lib':'gulf war iraq invasion desert storm liberation','kuwait-oil':'oil petroleum burgan gulf','kuwait-ind':'independence gulf','kuwait-sabah':'gulf sabah',
+ ww1:'ww1 wwi first great war',ww2:'ww2 wwii second nazi hitler holocaust',moon:'apollo space nasa armstrong','covid':'coronavirus pandemic covid19 virus',
+ 'french-rev':'france revolution napoleon',berlin:'cold war germany wall','genai':'ai artificial intelligence chatgpt','web':'internet www',plague:'plague pandemic black death',
+ 'russian-rev':'russia soviet lenin bolshevik communism','constantinople':'ottoman byzantine istanbul','columbus':'america discovery','qin':'china chinese emperor'};
+const TOPICS=[
+ {id:'t-egypt',n:'Ancient Egypt',a:-3100,b:-30,c:1,k:'ancient egypt egyptian egyptians pharaoh pharaohs pyramid pyramids nile giza tutankhamun cleopatra',s:'Three thousand years of pharaohs along the Nile, from the first united kingdom to Cleopatra and the Roman conquest.',ev:['egypt-unify','pyramid','tut','cleopatra']},
+ {id:'t-meso',n:'Mesopotamia',a:-3500,b:-539,c:1,k:'mesopotamia sumer sumerian babylon babylonian assyria assyrian iraq cuneiform ancient',s:'The land between the Tigris and Euphrates, where the first cities, writing and written laws appear.',ev:['writing','hammurabi']},
+ {id:'t-greece',n:'Ancient Greece',a:-800,b:-146,c:1,k:'ancient greece greek greeks athens sparta olympics alexander democracy',s:'City-states like Athens and Sparta, the first Olympics, democracy and philosophy, until the Roman conquest in 146 BCE.',ev:['olympics','alexander']},
+ {id:'t-rome',n:'Ancient Rome',a:-753,b:476,c:1,k:'ancient rome roman romans empire republic caesar latin',s:'From a small city on the Tiber to an empire around the whole Mediterranean, ending with the fall of the West in 476.',ev:['rome-rep','caesar','cleopatra','rome-fall']},
+ {id:'t-islamic',n:'Islamic Golden Age',a:750,b:1258,k:'islamic golden age abbasid caliphate baghdad arab arabic science islam',s:'Under the Abbasid caliphs, Baghdad becomes a world center of science, medicine, mathematics and translation.',ev:['baghdad','baghdad-fall']},
+ {id:'t-mongol',n:'Mongol Empire',a:1206,b:1368,k:'mongol mongols mongolia genghis khan empire',s:'The largest land empire in history, stretching from Korea to Eastern Europe.',ev:['genghis','baghdad-fall']},
+ {id:'t-ottoman',n:'Ottoman Empire',a:1299,b:1922,k:'ottoman ottomans turkey turkish empire istanbul constantinople sultan',s:'A Turkish empire that ruled much of southeastern Europe, the Middle East and North Africa for more than six centuries.',ev:['constantinople','ww1','ottoman-end']},
+ {id:'t-cold',n:'Cold War',a:1947,b:1991,k:'cold war usa ussr soviet union america american russia nuclear',s:'A standoff between the United States and the Soviet Union, fought through arms races, the space race and proxy wars rather than direct battle.',ev:['moon','berlin']},
+ {id:'t-ip',n:'Israeli–Palestinian conflict',a:1917,b:TODAY,k:'israel israeli israelis palestine palestinian palestinians gaza west bank jerusalem arab war conflict intifada',s:'A long-running conflict between Israelis and Palestinians over land, statehood, security and refugees. Its modern roots go back to the end of Ottoman rule and the British Mandate after World War I.',ev:['ip-1948','ip-1967','ip-1973','ip-1979','ip-1987','ip-1993','ip-2000','ip-2023']},
+ {id:'t-worldcup',n:'FIFA World Cup',a:1930,b:TODAY,k:'fifa world cup football soccer sport sports tournament mondial',s:'The world’s biggest football tournament, held every four years since 1930 except during World War II.',ev:['wc-1930','wc-1970','wc-1982','wc-1986','wc-2002','wc-2010','wc-2022','wc-2026']},
+ {id:'t-kuwait',n:'History of Kuwait',a:1700,b:TODAY,c:1,k:'kuwait kuwaiti gulf sabah history',s:'From a small trading and pearling port on the Gulf to an independent oil state.',ev:['kuwait-sabah','kuwait-1899','kuwait-oil','kuwait-ind','wc-1982','kuwait-lib']}
+];
+let focus=null, hl=null;
+
+const WW1={
+ era:'Modern era', dates:'28 Jul 1914 – 11 Nov 1918',
+ hero:'Soldiers in a front-line trench on the Western Front, 1916',
+ stats:[['≈65M','soldiers mobilized'],['≈9M','soldiers killed'],['≈20M','total deaths, military and civilian'],['4','empires collapsed']],
+ dates_:[['28 Jun 1914','Archduke shot in Sarajevo',1],['4 Aug 1914','Britain enters the war',2],['6 Sep 1914','First Battle of the Marne',3],['25 Apr 1915','Gallipoli landings',4],['1 Jul 1916','Battle of the Somme begins',3],['6 Apr 1917','United States declares war',5],['11 Nov 1918','Armistice',6],['28 Jun 1919','Treaty of Versailles',7]],
+ ch:[
+  {t:'The spark',w:'28 June 1914',p:['In Sarajevo, a 19-year-old Bosnian Serb named Gavrilo Princip shoots Archduke Franz Ferdinand, heir to the Austro-Hungarian throne, and his wife Sophie.','Austria-Hungary blames Serbia. With Germany’s backing, it sends Serbia an ultimatum written to be rejected.'],f:['photo','The Archduke and Sophie in Sarajevo, minutes before the attack']},
+  {t:'Alliances pull everyone in',w:'July – November 1914',p:['Austria-Hungary declares war on Serbia on 28 July. Russia mobilizes to protect Serbia. Germany declares war on Russia on 1 August and on France on 3 August, then invades neutral Belgium to reach Paris. Britain declares war on Germany on 4 August.','Within a week, a Balkan crisis has become a European war. In late 1914 the Ottoman Empire joins Germany’s side and the war reaches the Middle East.'],f:['map','Europe’s alliances, August 1914'],sides:1},
+  {t:'Trenches and stalemate',w:'1914 – 1916',p:['France and Britain stop the German advance at the First Battle of the Marne in September 1914. Both sides dig in, and soon a line of trenches runs about 700 km from the North Sea to Switzerland.','Attacks across no man’s land cost huge numbers of lives for very little ground. At Verdun in 1916, French and German armies fight for about 300 days. On the first day of the Somme, 1 July 1916, the British Army suffers about 57,000 casualties, the worst day in its history.'],f:['photo','Aerial photo of trench lines on the Somme']},
+  {t:'A world war',w:'1915 – 1918',p:['Fighting spreads far beyond Europe. At Gallipoli in 1915, Allied troops try to knock the Ottoman Empire out of the war and withdraw after eight months.','In Mesopotamia (today’s Iraq), a British-Indian army is besieged at Kut and surrenders in April 1916. In June 1916, Sharif Hussein of Mecca launches the Arab Revolt against Ottoman rule with British support. Meanwhile Britain and France secretly agree, in the Sykes–Picot Agreement, how to divide the region after the war.'],f:['map','Fronts in the Middle East, 1915–1918']},
+  {t:'1917, the turning point',w:'1917 – March 1918',p:['German submarines sink merchant ships without warning, and a secret German offer of an alliance to Mexico, the Zimmermann Telegram, is exposed. The United States declares war on Germany on 6 April 1917.','In Russia, revolution topples the tsar. The new Bolshevik government signs a separate peace with Germany at Brest-Litovsk in March 1918.'],f:['photo','American troops arriving in France, 1917']},
+  {t:'The end',w:'March – November 1918',p:['Germany moves its eastern armies west for a final Spring Offensive in March 1918 and comes close to Paris. The Allies stop it, then launch the Hundred Days Offensive on 8 August.','Bulgaria and the Ottoman Empire sign armistices, Austria-Hungary collapses, and Kaiser Wilhelm II abdicates. The guns fall silent at 11 a.m. on 11 November 1918.'],f:['photo','Crowds celebrate the Armistice, 11 November 1918']},
+  {t:'The aftermath',w:'1919 – 1923',p:['The Treaty of Versailles is signed on 28 June 1919, five years to the day after Sarajevo. It blames Germany for the war and demands heavy reparations.','The German, Austro-Hungarian, Russian and Ottoman empires are gone. New states appear in Europe, and Britain and France take control of former Ottoman lands as League of Nations mandates, drawing borders that still shape the Middle East. Anger over the peace helps set the stage for World War II twenty years later.'],f:['photo','Signing of the treaty in the Hall of Mirrors, Versailles']}
+ ],
+ allies:[['France'],['British Empire'],['Russia','to 1918'],['Serbia'],['Belgium'],['Japan'],['Italy','from 1915'],['Arab Revolt','from 1916'],['United States','from 1917']],
+ central:[['Germany'],['Austria-Hungary'],['Ottoman Empire','from 1914'],['Bulgaria','from 1915']],
+ people:[['FF','Franz Ferdinand','Heir to Austria-Hungary. His murder started the crisis.'],['W','Kaiser Wilhelm II','German emperor. Abdicated in November 1918.'],['N','Tsar Nicholas II','Russia’s last tsar. Abdicated in March 1917.'],['MK','Mustafa Kemal','Ottoman commander at Gallipoli. Later founded modern Turkey.'],['SH','Sharif Hussein','Emir of Mecca. Launched the Arab Revolt in 1916.'],['WW','Woodrow Wilson','US president. Proposed the Fourteen Points for peace.'],['GC','Georges Clemenceau','French prime minister at the Versailles talks.']],
+ related:['russian-rev','ottoman-end','crash','ww2']
+};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const tl=$('#tl');
+let center=1880, span=380, W=tl.clientWidth||800;
+const MIN_SPAN=6, MAX_SPAN=6200, MIN_Y=-3600, MAX_Y=2035;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const X=y=>(y-center)/span*W+W/2;
+const yearAt=px=>center+(px-W/2)/W*span;
+function fmt(y){y=Math.round(y);if(y<0)return Math.abs(y).toLocaleString('en-US')+' BCE';if(y===0)return '1 CE';return y<1000?y+' CE':String(y)}
+function fmtEv(e){const a=(e.c?'c. ':'')+fmt(e.y);return e.end?a+' – '+fmt(e.end):a}
+function eraOf(y){return ERAS.find(e=>y>=e.a&&y<e.b)||ERAS[ERAS.length-1]}
+function showImp(e){return e.imp===1||(e.imp===2&&span<4000)||(e.imp===3&&span<700)||e.id===hl||(focus&&focus.ev.includes(e.id))}
+const fmtRange=t=>(t.c?'c. ':'')+fmt(t.a)+' – '+(t.b>=TODAY?'today':fmt(t.b));
+const ICON={photo:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',map:'<svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>'};
+function ph(kind,cap){return `<figure class="ph"><div class="frame">${ICON[kind]}<span>${kind==='map'?'Archive map':'Archive photo'}</span></div><figcaption><b>${cap}</b> · Wikimedia Commons</figcaption></figure>`}
+
+/* ---------- eras ---------- */
+$('#eras').innerHTML=ERAS.map(e=>`<button class="chip" data-era="${e.id}" aria-pressed="false">${e.n}<span class="r">${fmt(e.a).replace(' CE','')}–${e.b>2026?'now':fmt(e.b).replace(' CE','')}</span></button>`).join('');
+$('#eras').addEventListener('click',ev=>{const b=ev.target.closest('.chip');if(!b)return;const e=ERAS.find(x=>x.id===b.dataset.era);setFocus(null);hl=null;flyTo((e.a+Math.min(e.b,TODAY))/2,(Math.min(e.b,TODAY)-e.a)*1.12)});
+
+/* ---------- render ---------- */
+let raf=0;function req(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})}
+let lastList='';
+function render(){
+  W=tl.clientWidth||W;
+  let h='';
+  for(const e of ERAS){const x1=Math.max(0,X(e.a)),x2=Math.min(W,X(e.b));if(x2>x1)h+=`<div class="band" style="left:${x1}px;width:${x2-x1}px;background:var(${e.c})">${x2-x1>70?e.n:''}</div>`}
+  // ticks
+  const steps=[1,2,5,10,20,50,100,200,500,1000,2000];
+  const step=steps.find(s=>s/span*W>=84)||2000;
+  const minor=step>=10?step/5:step===5?1:0;
+  const lo=center-span/2,hi=center+span/2;
+  if(minor&&minor/span*W>=8){for(let t=Math.ceil(lo/minor)*minor;t<=hi;t+=minor){if(t%step)h+=`<div class="tick minor" style="left:${X(t)}px"></div>`}}
+  for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step){const x=X(t);h+=`<div class="tick" style="left:${x}px"></div><div class="tlabel" style="left:${x}px">${fmt(t)}</div>`}
+  // today
+  const tx=X(TODAY);if(tx>=0&&tx<=W)h+=`<div class="today" style="left:${tx}px"><span>today</span></div>`;
+  // ranges + pins
+  const vis=E.filter(e=>showImp(e)&&X(e.end||e.y)>-260&&X(e.y)<W+20).sort((a,b)=>a.y-b.y||a.imp-b.imp);
+  for(const e of vis)if(e.end){const a=X(e.y),b=X(e.end);h+=`<div class="range" style="left:${a}px;width:${Math.max(3,b-a)}px"></div>`}
+  const lanes=[-1e9,-1e9,-1e9], tops=[34,74,114], AXIS=178;
+  if(focus){const x1=Math.max(0,X(focus.a)),x2=Math.min(W,X(focus.b));if(x2>x1)h+=`<div class="focus" style="left:${x1}px;width:${x2-x1}px"></div>`}
+  const rank=e=>e.id===hl?-2:(focus&&focus.ev.includes(e.id))?-1:e.imp;
+  const ordered=[...vis].sort((a,b)=>rank(a)-rank(b)||a.y-b.y);
+  const placed=[];
+  for(const e of ordered){const x=X(e.y),w=e.t.length*6.9+30;let lane=-1;
+    for(let i=0;i<3;i++){if(!placed.some(p=>p.lane===i&&x-12<p.r+6&&x-12+w>p.l-6)){lane=i;break}}
+    if(lane<0){placed.push({e,lane:-1,x});continue}
+    placed.push({e,lane,x,l:x-12,r:x-12+w});
+  }
+  for(const p of placed){
+    if(p.lane<0){h+=`<button class="dot" style="left:${p.x}px" data-id="${p.e.id}" aria-label="${p.e.t}, ${fmtEv(p.e)}" title="${p.e.t}"></button>`;continue}
+    const top=tops[p.lane];
+    h+=`<button class="pin imp${p.e.imp}${p.e.id===hl?' hl':''}" style="left:${p.x}px;top:${top}px" data-id="${p.e.id}" aria-label="${p.e.t}, ${fmtEv(p.e)}"><span class="d"></span>${p.e.t}<span class="stem" style="height:${AXIS-top-30}px"></span></button>`;
+  }
+  h+='<div class="axis"></div>';
+  tl.innerHTML=h;
+  // readout
+  const y=Math.round(center);
+  $('#year').textContent=fmt(y);
+  if(!focus)$('#aroundH').innerHTML=`Around <span>${fmt(y)}</span>`;
+  const er=eraOf(y);$('#eraName').textContent=er.n+' era';
+  document.querySelectorAll('.chip[data-era]').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.era===er.id)));
+  $('#scale').textContent=span>=100?`Showing ${Math.round(span).toLocaleString('en-US')} years`:`Showing ${Math.max(1,Math.round(span))} years`;
+  // around list
+  const near=focus?focus.ev.map(id=>({e:BY[id]})).sort((a,b)=>a.e.y-b.e.y):E.filter(e=>(e.end||e.y)>=lo&&e.y<=hi).map(e=>({e,d:(y>=e.y&&y<=(e.end||e.y))?0:Math.min(Math.abs(e.y-y),Math.abs((e.end||e.y)-y))})).sort((a,b)=>a.d-b.d||a.e.imp-b.e.imp).slice(0,6);
+  const key=(focus?focus.id:'')+near.map(n=>n.e.id).join();
+  if(key!==lastList){lastList=key;
+    $('#list').innerHTML=near.length?near.map(({e})=>`<button class="item${e.full?' full':''}" data-id="${e.id}"><span class="y">${fmtEv(e)}</span><span class="t">${e.t}<span class="p">${e.pl}</span></span><span class="go">›</span></button>`).join(''):'<p class="empty">No events in this stretch yet. Zoom out or pick an era.</p>';
+  }
+}
+
+/* ---------- interaction ---------- */
+function set(c,s){span=clamp(s,MIN_SPAN,MAX_SPAN);center=clamp(c,MIN_Y,MAX_Y);req()}
+let anim=0;
+function flyTo(c,s){cancelAnimationFrame(anim);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){set(c,s);return}
+  const c0=center,s0=span,t0=performance.now(),d=700;
+  const step=t=>{const k=Math.min(1,(t-t0)/d),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    set(c0+(c-c0)*e,Math.exp(Math.log(s0)+(Math.log(s)-Math.log(s0))*e));if(k<1)anim=requestAnimationFrame(step)};
+  anim=requestAnimationFrame(step)}
+function zoomAt(px,f){const y=yearAt(px);const s=clamp(span*f,MIN_SPAN,MAX_SPAN);set(y-(px-W/2)/W*s,s)}
+
+const P=new Map();let moved=false,start=null,pinch=null;
+const rx=e=>e.clientX-tl.getBoundingClientRect().left;
+tl.addEventListener('pointerdown',e=>{cancelAnimationFrame(anim);P.set(e.pointerId,rx(e));moved=false;
+  if(P.size===1){start={x:rx(e),c:center};tl.classList.add('dragging')}
+  if(P.size===2){const [a,b]=[...P.values()];pinch={d:Math.abs(a-b)||1,s:span,y:yearAt((a+b)/2)}}});
+window.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;P.set(e.pointerId,rx(e));
+  if(P.size>=2&&pinch){const [a,b]=[...P.values()];const s=clamp(pinch.s*pinch.d/(Math.abs(a-b)||1),MIN_SPAN,MAX_SPAN);moved=true;set(pinch.y-((a+b)/2-W/2)/W*s,s)}
+  else if(start){const dx=rx(e)-start.x;if(Math.abs(dx)>4)moved=true;if(moved)set(start.c-dx/W*span,span)}});
+function up(e){if(!P.has(e.pointerId))return;P.delete(e.pointerId);pinch=null;
+  if(P.size===1){const v=[...P.values()][0];start={x:v,c:center}}else{start=null;tl.classList.remove('dragging')}}
+window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+tl.addEventListener('wheel',e=>{e.preventDefault();if(Math.abs(e.deltaX)>Math.abs(e.deltaY)){set(center+e.deltaX/W*span,span)}else zoomAt(rx(e),Math.exp(e.deltaY*0.0018))},{passive:false});
+tl.addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b||moved)return;openStory(b.dataset.id)});
+tl.addEventListener('keydown',e=>{const k=e.key;
+  if(k==='ArrowLeft'){set(center-span*.1,span);e.preventDefault()}
+  else if(k==='ArrowRight'){set(center+span*.1,span);e.preventDefault()}
+  else if(k==='+'||k==='='){zoomAt(W/2,.7)}else if(k==='-'){zoomAt(W/2,1/.7)}});
+$('#zin').onclick=()=>flyTo(center,span*.5);
+$('#zout').onclick=()=>flyTo(center,span*2);
+$('#list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)openStory(b.dataset.id)});
+/* ---------- keyword search ---------- */
+const STOP=new Set(['the','of','and','in','a','an','to','on','at','for','era','age','period','history','timeline','time','line']);
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’'`]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const words=s=>norm(s).split(' ').filter(Boolean);
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function wordScore(q,w){if(q===w)return 3;if((q.length>=3&&w.startsWith(q))||(w.length>=4&&q.startsWith(w)))return 2;
+  if(q.length>=5&&lev(q,w)<=(q.length>=8?2:1))return 1.5;return 0}
+const INDEX=[
+  ...TOPICS.map(t=>({type:'Topic',ref:t,name:t.n,sub:fmtRange(t),boost:3,w:new Set(words(t.n+' '+t.k))})),
+  ...ERAS.map(e=>({type:'Era',ref:e,name:e.n+' era',sub:fmtRange({a:e.a,b:Math.min(e.b,TODAY)}),boost:.5,w:new Set(words(e.n+' '+(e.id==='medieval'?'middle ages':'')))})),
+  ...E.map(e=>({type:'Event',ref:e,name:e.t,sub:fmtEv(e),boost:0,title:new Set(words(e.t)),w:new Set(words(e.t+' '+e.pl+' '+(e.k||'')+' '+(KW[e.id]||'')))}))
+];
+function search(v){
+  const raw=v.trim();if(!raw)return[];
+  const out=[];
+  const ym=raw.match(/^(-?\d{1,4})\s*(bc|bce|b\.c\.|ad|ce)?$/i);
+  if(ym){let y=parseInt(ym[1],10);if(/^b/i.test(ym[2]||'')&&y>0)y=-y;if(y>=MIN_Y&&y<=TODAY)out.push({type:'Year',year:y,name:fmt(y),sub:eraOf(y).n+' era',score:99})}
+  const qs=words(raw).filter(w=>!STOP.has(w)&&!/^\d+$/.test(w));
+  if(!qs.length)return out;
+  const need=Math.max(1,Math.ceil(qs.length/2));
+  for(const it of INDEX){let sum=0,hit=0,titleHit=0;
+    for(const q of qs){let best=0;for(const w of it.w){const s=wordScore(q,w);if(s>best)best=s;if(best===3)break}
+      if(best){sum+=best;hit++;if(it.title&&[...it.title].some(w=>w===q))titleHit++}}
+    if(hit<need)continue;
+    out.push({...it,score:sum+hit*2+(hit===qs.length?6:0)+it.boost+titleHit+(it.type==='Event'?(3-it.ref.imp)*.2:0)});
+  }
+  return out.sort((a,b)=>b.score-a.score).slice(0,7);
+}
+const qIn=$('#yr'),resBox=$('#results');let results=[],active=0;
+function showResults(){
+  qIn.setAttribute('aria-expanded',String(!resBox.hidden));
+  if(!qIn.value.trim()){resBox.hidden=true;qIn.setAttribute('aria-expanded','false');return}
+  resBox.hidden=false;qIn.setAttribute('aria-expanded','true');
+  resBox.innerHTML=results.length?results.map((r,i)=>`<button type="button" class="res" role="option" id="res${i}" aria-selected="${i===active}" data-i="${i}"><span class="k">${r.type}</span><span class="n">${r.name}<small>${r.sub}</small></span></button>`).join('')
+    :'<div class="res-empty">No match yet. Try a place, empire, war or year, like “ottoman”, “cold war” or “1969”.</div>';
+  qIn.setAttribute('aria-activedescendant',results.length?'res'+active:'');
+}
+qIn.addEventListener('input',()=>{results=search(qIn.value);active=0;showResults()});
+qIn.addEventListener('focus',()=>{if(qIn.value.trim()){results=search(qIn.value);showResults()}});
+qIn.addEventListener('keydown',e=>{
+  if(resBox.hidden)return;
+  if(e.key==='ArrowDown'){active=Math.min(results.length-1,active+1);showResults();e.preventDefault()}
+  else if(e.key==='ArrowUp'){active=Math.max(0,active-1);showResults();e.preventDefault()}
+  else if(e.key==='Escape'){resBox.hidden=true;qIn.setAttribute('aria-expanded','false')}
+});
+resBox.addEventListener('mousedown',e=>e.preventDefault());
+resBox.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)choose(results[+b.dataset.i])});
+qIn.addEventListener('blur',()=>{resBox.hidden=true;qIn.setAttribute('aria-expanded','false')});
+$('#goto').addEventListener('submit',e=>{e.preventDefault();results=search(qIn.value);if(results.length)choose(results[Math.min(active,results.length-1)]);else showResults()});
+function setFocus(t){focus=t;lastList='';
+  const c=$('#focusCard');
+  if(!t){c.hidden=true;req();return}
+  $('#fcTitle').innerHTML=`${t.n}<small>${fmtRange(t)}</small>`;$('#fcText').textContent=t.s;c.hidden=false;
+  $('#aroundH').innerHTML=`Inside <span style="font-family:var(--f-display)">${t.n}</span>`;req()}
+$('#fcClear').onclick=()=>{setFocus(null);hl=null;req()};
+function choose(r){
+  resBox.hidden=true;qIn.setAttribute('aria-expanded','false');qIn.value=r.name;qIn.blur();
+  hl=null;
+  if(r.type==='Year'){setFocus(null);flyTo(r.year,40)}
+  else if(r.type==='Era'){setFocus(null);const e=r.ref,b=Math.min(e.b,TODAY);flyTo((e.a+b)/2,(b-e.a)*1.12)}
+  else if(r.type==='Topic'){const t=r.ref;setFocus(t);flyTo((t.a+t.b)/2,Math.max(30,(t.b-t.a)*1.15))}
+  else{const e=r.ref;setFocus(null);hl=e.id;const len=(e.end||e.y)-e.y;flyTo(e.y+len/2,Math.max(40,len*2.5))}
+  $('.instrument').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+}
+new ResizeObserver(req).observe(tl);
+
+/* ---------- story ---------- */
+const sheet=$('#sheet'),story=$('#story');let lastFocus=null;
+function openStory(id){const e=BY[id];if(!e)return;lastFocus=document.activeElement;
+  $('#crumb').textContent=fmtEv(e);
+  story.innerHTML=e.full?ww1HTML(e):shortHTML(e);
+  sheet.hidden=false;sheet.scrollTop=0;document.documentElement.style.overflow='hidden';
+  $('#back').focus();
+  try{history.replaceState(null,'','#'+id)}catch(_){}
+}
+function closeStory(){sheet.hidden=true;document.documentElement.style.overflow='';try{history.replaceState(null,'',location.pathname+location.search)}catch(_){}
+  if(lastFocus&&document.contains(lastFocus))lastFocus.focus()}
+$('#back').onclick=closeStory;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeStory()});
+story.addEventListener('click',e=>{
+  const r=e.target.closest('[data-rel]');if(r){openStory(r.dataset.rel);return}
+  const d=e.target.closest('[data-ch]');if(d){const el=document.getElementById('ch'+d.dataset.ch);el&&el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+  const j=e.target.closest('[data-jump]');if(j){const ev=BY[j.dataset.jump];closeStory();flyTo(ev.y,30)}
+});
+const relChip=id=>{const r=BY[id];return `<button class="chip" data-rel="${id}">${r.t}<span class="r">${fmtEv(r)}</span></button>`};
+function shortHTML(e){
+  const i=E.indexOf(e),prev=E[i-1],next=E[i+1];
+  return `<div><div class="eyebrow">${eraOf(e.y).n} era · ${fmtEv(e)}</div><h1 id="stTitle">${e.t}</h1><p class="dek">${e.s}</p></div>
+  ${ph('photo',e.img)}
+  <dl class="facts"><dt>When</dt><dd>${fmtEv(e)}</dd><dt>Where</dt><dd>${e.pl}</dd><dt>Era</dt><dd>${eraOf(e.y).n}</dd></dl>
+  <h3 class="sec">Before and after</h3>
+  <div class="related">${prev?relChip(prev.id):''}${next?relChip(next.id):''}<button class="chip" data-jump="${e.id}">Show on timeline</button></div>
+  <p class="note">This is the short version. In the full app every event gets chapters, key people and maps like the World War I story.</p>`;
+}
+function ww1HTML(e){const s=WW1;
+  return `<div><div class="eyebrow">${s.era} · ${s.dates}</div><h1 id="stTitle">World War I</h1><p class="dek">${e.s}</p></div>
+  ${ph('photo',s.hero)}
+  <div class="stats">${s.stats.map(([b,t])=>`<div class="stat"><b>${b}</b><span>${t}</span></div>`).join('')}</div>
+  <div><h3 class="sec">Key dates</h3><p class="note" style="border:0;padding:0;margin:4px 0 10px">Tap a date to jump to that part of the story.</p>
+  <div class="dates">${s.dates_.map(([d,t,c])=>`<button class="date" data-ch="${c}"><b>${d}</b><span>${t}</span></button>`).join('')}</div></div>
+  ${s.ch.map((c,i)=>`<section class="chapter" id="ch${i+1}"><div class="num">Chapter ${i+1} of ${s.ch.length}</div><h2>${c.t}</h2><div class="when">${c.w}</div>${c.p.map(p=>`<p>${p}</p>`).join('')}${ph(c.f[0],c.f[1])}${c.sides?sidesHTML():''}</section>`).join('')}
+  <div><h3 class="sec">Key people</h3><div class="people" style="margin-top:12px">${s.people.map(([i,n,d])=>`<div class="person"><div class="avatar" aria-hidden="true">${i}</div><div><b>${n}</b><span>${d}</span></div></div>`).join('')}</div></div>
+  <div><h3 class="sec">What it led to</h3><div class="related" style="margin-top:12px">${s.related.map(relChip).join('')}<button class="chip" data-jump="ww1">Show on timeline</button></div></div>
+  <p class="note">Figures are historians’ estimates and vary by source. In the full app, text is drafted from Wikipedia and reviewed before publishing, and portraits load in place of the initials.</p>`;
+}
+function sidesHTML(){const s=WW1,li=a=>`<li>${a[0]}${a[1]?`<small>${a[1]}</small>`:''}</li>`;
+  return `<div class="sides"><div class="side"><h4>Allies</h4><ul>${s.allies.map(li).join('')}</ul></div><div class="side"><h4>Central Powers</h4><ul>${s.central.map(li).join('')}</ul></div></div>`}
+
+render();
+const h0=(location.hash||'').slice(1);if(BY[h0]){center=clamp(BY[h0].y,MIN_Y,MAX_Y);span=120;render();openStory(h0)}
+</script>
