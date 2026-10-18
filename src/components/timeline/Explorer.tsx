@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TimelineData, TimelineEvent, TimelineTile } from "@/lib/content/types";
+import type { TimelineData, TimelineTile } from "@/lib/content/types";
 import { formatEventYears, formatYear, formatYearShort } from "@/lib/format/years";
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
@@ -16,7 +16,6 @@ import {
   fitRange,
   INITIAL_VIEW,
   interpolateView,
-  viewForEvent,
   zoomAt,
   type View,
 } from "@/lib/timeline/geometry";
@@ -43,9 +42,6 @@ export function Explorer({ locale, data, initialTiles }: Props) {
   const router = useRouter();
   const { currentYear } = data;
   const [view, setViewState] = useState<View>(INITIAL_VIEW);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
-  // A searched event that isn't loaded yet (search covers every event; the page only the biggest).
-  const [chosen, setChosen] = useState<TimelineEvent | null>(null);
   const viewRef = useRef(view);
   const animRef = useRef(0);
   const instrumentRef = useRef<HTMLDivElement>(null);
@@ -87,7 +83,6 @@ export function Explorer({ locale, data, initialTiles }: Props) {
   useEffect(() => {
     // Subscribe first so an animated request from a story page wins over the hash it also set.
     const unsubscribe = subscribeTimelineJump(({ instant, ...v }) => {
-      setHighlighted(null);
       if (instant) setView(v);
       else flyTo(v);
     });
@@ -106,9 +101,8 @@ export function Explorer({ locale, data, initialTiles }: Props) {
   const events = useMemo(() => {
     const all = new Map(data.events.map((e) => [e.slug, e]));
     for (const e of tileEvents) if (!all.has(e.slug)) all.set(e.slug, e);
-    if (chosen && !all.has(chosen.slug)) all.set(chosen.slug, chosen);
     return [...all.values()];
-  }, [data.events, tileEvents, chosen]);
+  }, [data.events, tileEvents]);
 
   const year = Math.round(view.center);
   const era = eraAt(data.eras, year);
@@ -117,19 +111,15 @@ export function Explorer({ locale, data, initialTiles }: Props) {
   const openEvent = (slug: string) => router.push(`/${locale}/events/${slug}`);
 
   function choose(r: SearchResult) {
-    setHighlighted(null);
-    // Topics and people have their own timelines.
+    // Topics, people and events have their own pages.
     if (r.type === "topic") return router.push(`/${locale}/topics/${r.topic.slug}`);
     if (r.type === "person") return router.push(`/${locale}/people/${r.person.slug}`);
+    if (r.type === "event") return openEvent(r.event.slug);
     if (r.type === "year") {
       flyTo({ center: r.year, span: 40 });
-    } else if (r.type === "era") {
+    } else {
       const end = r.era.endYear ?? currentYear;
       flyTo(fitRange(r.era.startYear, Math.min(end, currentYear)));
-    } else {
-      setChosen(r.event);
-      setHighlighted(r.event.slug);
-      flyTo(viewForEvent(r.event));
     }
     instrumentRef.current?.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }
@@ -175,10 +165,7 @@ export function Explorer({ locale, data, initialTiles }: Props) {
               type="button"
               aria-pressed={pressed}
               className={`chip ${pressed ? "border-ink bg-ink text-bg" : ""}`}
-              onClick={() => {
-                setHighlighted(null);
-                flyTo(fitRange(e.startYear, Math.min(e.endYear ?? currentYear, currentYear)));
-              }}
+              onClick={() => flyTo(fitRange(e.startYear, Math.min(e.endYear ?? currentYear, currentYear)))}
             >
               {e.name}
               <span className={`chip-range ${pressed ? "text-inherit opacity-70" : ""}`}>
@@ -197,7 +184,7 @@ export function Explorer({ locale, data, initialTiles }: Props) {
           events={events}
           currentYear={currentYear}
           focus={null}
-          highlighted={highlighted}
+          highlighted={null}
           onInteractStart={stopAnimation}
           onPan={(center) => setView({ center, span: viewRef.current.span })}
           onZoomAt={(x, factor, w) => setView(zoomAt(viewRef.current, x, factor, w, currentYear))}
