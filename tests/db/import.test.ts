@@ -161,6 +161,8 @@ describe.skipIf(!url)("importer load", () => {
     expect(page.source?.url).toBe("https://en.wikipedia.org/wiki/Saddam_Hussein");
     expect(page.life[0]).toMatchObject({ kind: "birth", label: "Born in Al-Awja" });
     expect(page.life).toContainEqual(expect.objectContaining({ kind: "event", eventSlug: "test-summit" }));
+    // An event in their own life is not repeated as a world event.
+    expect(page.world.map((w) => w.slug)).not.toContain("test-summit");
     expect(page.life).toContainEqual(expect.objectContaining({ kind: "position", label: "President of Iraq" }));
     expect(page.topics.map((t) => t.slug)).toEqual(["israeli-palestinian-conflict"]);
 

@@ -669,6 +669,8 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
     left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
     where e.status = 'published' and e.importance = 1
       and e.start_year >= ${p.birth_year} and e.start_year <= ${end}
+      -- Events already in their own life are not repeated as world events.
+      and not exists (select 1 from public.person_events pe where pe.person_id = ${p.id} and pe.event_id = e.id)
     order by e.start_year, e.slug
     limit 40`;
 
