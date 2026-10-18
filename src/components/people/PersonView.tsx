@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { CommonsFigure } from "@/components/story/CommonsFigure";
 import { FocusTimeline } from "@/components/timeline/FocusTimeline";
+import { WorldToggle } from "./WorldToggle";
 import { WikipediaCredit } from "@/components/ui/WikipediaCredit";
 
 const H2 = "m-0 mt-2 font-display text-2xl font-medium";
@@ -51,8 +52,9 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
     person.deathYear != null
       ? person.deathYear - person.birthYear - (person.birthYear < 0 && person.deathYear > 0 ? 1 : 0)
       : null;
+  const own = new Set(page.life.map((l) => l.eventSlug));
   const context = data.events.filter(
-    (e) => e.importance === 1 && e.startYear >= person.birthYear && e.startYear <= end,
+    (e) => e.importance === 1 && e.startYear >= person.birthYear && e.startYear <= end && !own.has(e.slug),
   );
 
   // The life list, with the biggest world events of the time between its rows.
@@ -158,55 +160,58 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
           events={lifePins(page.life, locale)}
           context={context}
         />
-        <ol className="m-0 grid list-none gap-1.5 p-0" data-testid="life-list">
-          {rows.map((r, i) =>
-            r.type === "life" ? (
-              <li
-                key={`l${i}`}
-                className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 rounded-lg border border-line bg-surface px-3 py-2"
-              >
-                <span className="font-mono text-xs text-muted tabular-nums">{when(r.item, locale)}</span>
-                <span className="min-w-0">
-                  <span className="me-2 text-[10px] font-semibold tracking-[.07em] text-accent-strong uppercase">
-                    {t.person.kinds[r.item.kind]}
+        <WorldToggle show={t.person.showWorld} hide={t.person.hideWorld}>
+          <ol className="m-0 grid list-none gap-1.5 p-0" data-testid="life-list">
+            {rows.map((r, i) =>
+              r.type === "life" ? (
+                <li
+                  key={`l${i}`}
+                  className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 rounded-lg border border-line bg-surface px-3 py-2"
+                >
+                  <span className="font-mono text-xs text-muted tabular-nums">{when(r.item, locale)}</span>
+                  <span className="min-w-0">
+                    <span className="me-2 text-[10px] font-semibold tracking-[.07em] text-accent-strong uppercase">
+                      {t.person.kinds[r.item.kind]}
+                    </span>
+                    {r.item.eventSlug ? (
+                      <Link
+                        href={`/${locale}/events/${r.item.eventSlug}`}
+                        className="font-semibold text-ink"
+                        lang={r.item.labelLocale}
+                        dir="auto"
+                      >
+                        {r.item.label}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold" lang={r.item.labelLocale} dir="auto">
+                        {r.item.label}
+                      </span>
+                    )}
                   </span>
-                  {r.item.eventSlug ? (
+                </li>
+              ) : (
+                <li
+                  key={`w${r.item.slug}`}
+                  className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 px-3 py-1 opacity-70 group-data-[world=hidden]:hidden"
+                  data-row="world"
+                >
+                  <span className="font-mono text-xs text-muted tabular-nums">{formatEventYears(r.item, locale)}</span>
+                  <span className="min-w-0 text-sm text-muted">
+                    <span className="me-2 text-[10px] font-semibold tracking-[.07em] uppercase">{t.person.world}</span>
                     <Link
-                      href={`/${locale}/events/${r.item.eventSlug}`}
-                      className="font-semibold text-ink"
-                      lang={r.item.labelLocale}
+                      href={`/${locale}/events/${r.item.slug}`}
+                      className="text-muted"
+                      lang={r.item.textLocale}
                       dir="auto"
                     >
-                      {r.item.label}
+                      {r.item.title}
                     </Link>
-                  ) : (
-                    <span className="font-semibold" lang={r.item.labelLocale} dir="auto">
-                      {r.item.label}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ) : (
-              <li
-                key={`w${r.item.slug}`}
-                className="grid grid-cols-[minmax(84px,auto)_1fr] items-baseline gap-3 px-3 py-1 opacity-70"
-              >
-                <span className="font-mono text-xs text-muted tabular-nums">{formatEventYears(r.item, locale)}</span>
-                <span className="min-w-0 text-sm text-muted">
-                  <span className="me-2 text-[10px] font-semibold tracking-[.07em] uppercase">{t.person.world}</span>
-                  <Link
-                    href={`/${locale}/events/${r.item.slug}`}
-                    className="text-muted"
-                    lang={r.item.textLocale}
-                    dir="auto"
-                  >
-                    {r.item.title}
-                  </Link>
-                </span>
-              </li>
-            ),
-          )}
-        </ol>
+                  </span>
+                </li>
+              ),
+            )}
+          </ol>
+        </WorldToggle>
       </section>
 
       {person.addedFromSearch && (
