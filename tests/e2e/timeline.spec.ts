@@ -102,12 +102,12 @@ test.describe("timeline", () => {
     await expect(page.getByRole("listbox")).toContainText("No match yet");
   });
 
-  test("highlights a searched event on the track", async ({ page }) => {
+  test("opens a searched event's page", async ({ page }) => {
     await page.goto("/en");
     await search(page, "moon landing");
     await page.getByRole("option", { name: /Apollo 11 Moon landing/ }).click();
-    await expect(readout(page)).toHaveText("1969");
-    await expect(timeline(page).getByRole("button", { name: /Apollo 11 Moon landing/ })).toHaveClass(/pin-pulse/);
+    await expect(page).toHaveURL(/\/en\/events\/apollo-11-moon-landing$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Apollo 11");
   });
 
   test("loads smaller events when zooming into another period", async ({ page }) => {
@@ -117,12 +117,11 @@ test.describe("timeline", () => {
     await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toBeVisible();
   });
 
-  test("finds and highlights a smaller event far from the opening view", async ({ page }) => {
+  test("finds a smaller event far from the opening view and opens it", async ({ page }) => {
     await page.goto("/en");
     await search(page, "tutankhamun");
     await page.getByRole("option", { name: /Tutankhamun becomes pharaoh/ }).click();
-    await expect(readout(page)).toHaveText("1,332 BCE");
-    await expect(timeline(page).getByRole("button", { name: /Tutankhamun becomes pharaoh/ })).toHaveClass(/pin-pulse/);
+    await expect(page).toHaveURL(/\/en\/events\/tutankhamun-becomes-pharaoh$/);
   });
 
   test("looks up someone who isn't on the site yet and opens their page", async ({ page }) => {
