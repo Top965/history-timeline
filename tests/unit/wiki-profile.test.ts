@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadWikiProfile } from "@/lib/wiki/fetchProfile";
 import {
+  articleLead,
   careerRows,
+  keyDates,
   parseArticle,
   parseHonours,
   profileFacts,
@@ -152,6 +154,29 @@ describe("parseHonours", () => {
   });
 });
 
+describe("keyDates and articleLead", () => {
+  it("reads when something happened or was published, and nothing else", () => {
+    const protocols: WikidataEntity = {
+      id: "Q193286",
+      claims: { P577: [{ mainsnak: time(1903) }], P571: [{ mainsnak: { snaktype: "somevalue" } }] },
+    };
+    expect(keyDates(protocols)).toEqual([{ key: "published", year: 1903 }]);
+    const war: WikidataEntity = {
+      id: "Q1",
+      claims: { P580: [{ mainsnak: time(1990) }], P582: [{ mainsnak: time(1991) }] },
+    };
+    expect(keyDates(war)).toEqual([
+      { key: "start", year: 1990 },
+      { key: "end", year: 1991 },
+    ]);
+  });
+
+  it("takes the lead from before the first heading", () => {
+    expect(articleLead(article)).toBe("Neymar is a Brazilian footballer.");
+    expect(articleLead("Only a lead.")).toBe("Only a lead.");
+  });
+});
+
 describe("loadWikiProfile", () => {
   it("reads the article in the reader's language when it exists", async () => {
     const urls: string[] = [];
@@ -162,7 +187,7 @@ describe("loadWikiProfile", () => {
         urls.push(url.toString());
         const p = url.searchParams;
         const body =
-          url.host === "www.wikidata.org" && p.get("props") === "claims|sitelinks"
+          url.host === "www.wikidata.org" && p.get("props") === "claims|sitelinks|labels|descriptions"
             ? { entities: { Q142794: neymar } }
             : url.host === "www.wikidata.org"
               ? {
@@ -177,6 +202,8 @@ describe("loadWikiProfile", () => {
     expect(urls.some((u) => u.startsWith("https://ar.wikipedia.org/") && u.includes("origin=*"))).toBe(true);
     expect(profile.career).toHaveLength(3);
     expect(profile.honours).toHaveLength(3);
+    expect(profile.lead).toBe("Neymar is a Brazilian footballer.");
+    expect(profile.title).toBe("نيمار");
   });
 
   it("fails when Wikidata cannot be reached, and tries again next time", async () => {

@@ -23,7 +23,17 @@ export type Messages = {
       limited: string;
       cannotAdd: string;
       failed: string;
+      open: string;
     };
+  };
+  wikiArticle: {
+    kicker: string;
+    loading: string;
+    failed: string;
+    noArticle: string;
+    notOnTimeline: string;
+    source: string;
+    dates: Record<"published" | "inception" | "pointInTime" | "start" | "end", string>;
   };
   readout: { hint: string; era: (name: string) => string };
   eras: { label: string; now: string };
@@ -132,16 +142,27 @@ const en: Messages = {
     failed: "Search isn’t working right now. Please try again.",
     types: { year: "Year", era: "Era", topic: "Topic", event: "Event", person: "Person" },
     lookup: {
-      prompt: (q) => `Looking for someone else? Find “${q}” on Wikipedia`,
+      prompt: (q) => `Not here? Find “${q}” on Wikipedia`,
       looking: "Looking on Wikipedia…",
-      none: "No one by that name on Wikipedia who isn’t already here.",
+      none: "Nothing by that name on Wikipedia that isn’t already here.",
       add: "Add",
       adding: "Building their timeline…",
       limited: "Too many people added just now. Please try again later.",
       cannotAdd:
         "We can’t make a reliable timeline for this person yet: their birth year is missing or their dates don’t add up.",
       failed: "That didn’t work. Please try again.",
+      open: "Open",
     },
+  },
+  wikiArticle: {
+    kicker: "Wikipedia article",
+    source: "Dates from",
+    loading: "Loading the article from Wikipedia…",
+    failed: "Wikipedia couldn’t be reached just now. Please try again.",
+    noArticle: "Wikipedia has no article about this.",
+    notOnTimeline:
+      "This isn’t on the timeline yet. Below is Wikipedia’s own article, with the dates Wikidata gives for it.",
+    dates: { published: "Published", inception: "Created", pointInTime: "Date", start: "Began", end: "Ended" },
   },
   readout: {
     hint: "Drag left or right to move in time. Scroll, pinch or use + and − to zoom from eras down to single years.",
@@ -293,15 +314,25 @@ const ar: Messages = {
     failed: "البحث لا يعمل الآن. حاول مرة أخرى.",
     types: { year: "سنة", era: "عصر", topic: "موضوع", event: "حدث", person: "شخصية" },
     lookup: {
-      prompt: (q) => `تبحث عن شخص آخر؟ ابحث عن «${q}» في ويكيبيديا`,
+      prompt: (q) => `غير موجود هنا؟ ابحث عن «${q}» في ويكيبيديا`,
       looking: "جارٍ البحث في ويكيبيديا…",
-      none: "لا يوجد في ويكيبيديا شخص بهذا الاسم غير موجود هنا.",
+      none: "لا يوجد في ويكيبيديا شيء بهذا الاسم غير موجود هنا.",
       add: "أضف",
       adding: "جارٍ بناء خطه الزمني…",
       limited: "أُضيف عدد كبير من الأشخاص للتو. حاول مرة أخرى لاحقًا.",
       cannotAdd: "لا يمكننا إنشاء خط زمني موثوق لهذا الشخص بعد: سنة ميلاده غير معروفة أو تواريخه غير متّسقة.",
       failed: "لم ينجح ذلك. حاول مرة أخرى.",
+      open: "افتح",
     },
+  },
+  wikiArticle: {
+    kicker: "مقالة من ويكيبيديا",
+    source: "مصدر التواريخ",
+    loading: "جارٍ تحميل المقالة من ويكيبيديا…",
+    failed: "تعذّر الوصول إلى ويكيبيديا الآن. حاول مرة أخرى.",
+    noArticle: "لا توجد في ويكيبيديا مقالة عن هذا.",
+    notOnTimeline: "هذا ليس على الخط الزمني بعد. فيما يلي مقالة ويكيبيديا نفسها، مع التواريخ التي يذكرها ويكي بيانات.",
+    dates: { published: "النشر", inception: "الإنشاء", pointInTime: "التاريخ", start: "البداية", end: "النهاية" },
   },
   readout: {
     hint: "اسحب يمينًا أو يسارًا للتنقل في الزمن. مرّر أو قرّب بإصبعين أو استخدم + و − للتكبير من العصور حتى السنة الواحدة.",

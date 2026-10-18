@@ -8,7 +8,7 @@ import { SECTION_ATTR } from "@/lib/wiki/jump";
 
 type State = { kind: "loading" } | { kind: "ready"; profile: WikiProfile } | { kind: "failed" };
 
-function useWikiProfile(wikidataId: string, locale: Locale): State {
+export function useWikiProfile(wikidataId: string, locale: Locale): State {
   const [state, setState] = useState<State>({ kind: "loading" });
   useEffect(() => {
     let live = true;
