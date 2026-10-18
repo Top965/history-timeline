@@ -125,7 +125,7 @@ const en: Messages = {
     "Explore all of history on one zoomable timeline: drag through time, zoom from eras to single years and read the full story of any event.",
   search: {
     label: "Search history",
-    placeholder: "Search: saddam hussein, world cup, 1969…",
+    placeholder: "Search: Albert Einstein, World War II, Egypt…",
     go: "Go",
     noMatch: "No match yet. Try a place, empire, war or year, like “ottoman”, “cold war” or “1969”.",
     searching: "Searching…",
@@ -285,7 +285,7 @@ const ar: Messages = {
     "استكشف التاريخ كله على خط زمني واحد: تنقّل عبر الزمن، وكبّر من العصور إلى السنوات، واقرأ القصة الكاملة لأي حدث.",
   search: {
     label: "ابحث في التاريخ",
-    placeholder: "ابحث: صدام حسين، كأس العالم، 1969…",
+    placeholder: "ابحث: ألبرت أينشتاين، الحرب العالمية الثانية، مصر…",
     go: "اذهب",
     noMatch:
       "لا توجد نتائج بعد. جرّب مكانًا أو إمبراطورية أو حربًا أو سنة، مثل «العثمانية» أو «الحرب الباردة» أو «1969».",
