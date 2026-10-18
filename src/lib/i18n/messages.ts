@@ -41,6 +41,7 @@ export type Messages = {
   };
   story: {
     back: string;
+    home: string;
     keyDates: string;
     tapDate: string;
     chapterOf: (i: number, n: number) => string;
@@ -160,7 +161,8 @@ const en: Messages = {
     fullStory: "Full story",
   },
   story: {
-    back: "Back to timeline",
+    back: "Back",
+    home: "Main page",
     keyDates: "Key dates",
     tapDate: "Tap a date to jump to that part of the story.",
     chapterOf: (i, n) => `Chapter ${i} of ${n}`,
@@ -319,7 +321,8 @@ const ar: Messages = {
     fullStory: "قصة كاملة",
   },
   story: {
-    back: "العودة إلى الخط الزمني",
+    back: "رجوع",
+    home: "الصفحة الرئيسية",
     keyDates: "تواريخ رئيسية",
     tapDate: "اضغط على تاريخ للانتقال إلى ذلك الجزء من القصة.",
     chapterOf: (i, n) => `الفصل ${i} من ${n}`,

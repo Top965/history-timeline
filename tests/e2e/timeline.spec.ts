@@ -85,6 +85,29 @@ test.describe("timeline", () => {
     await expect(page.getByTestId("timeline").filter({ visible: true })).toBeVisible();
   });
 
+  test("goes back from an event to the topic that opened it, and home from anywhere", async ({ page }) => {
+    await page.goto("/en/topics/ancient-egypt");
+    await page
+      .getByTestId("topic-events")
+      .getByRole("link", { name: /Great Pyramid of Giza/ })
+      .click();
+    await expect(page).toHaveURL(/\/en\/events\/great-pyramid-of-giza$/);
+    const visible = (name: string | RegExp) => page.getByRole("link", { name }).filter({ visible: true });
+    await visible(/^Back$/).click();
+    await expect(page).toHaveURL(/\/en\/topics\/ancient-egypt$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Ancient Egypt" })).toBeVisible();
+    // The topic was opened directly, so its Back leads to the timeline, not to the event again.
+    await expect(visible(/^Back$/)).toHaveAttribute("href", "/en");
+
+    // Opened directly, Back goes to the timeline, as the home button always does.
+    await page.goto("/en/events/great-pyramid-of-giza");
+    await visible(/^Back$/).click();
+    await expect(page).toHaveURL(/\/en$/);
+    await page.goto("/en/topics/ancient-egypt");
+    await visible("Main page").click();
+    await expect(page).toHaveURL(/\/en$/);
+  });
+
   test("searches years with BC and typos", async ({ page }) => {
     await page.goto("/en");
     await search(page, "44 BC");
@@ -188,7 +211,7 @@ test.describe("story pages", () => {
     await page.getByRole("link", { name: /1 Jul 1916/ }).click();
     await expect(page).toHaveURL(/#chapter-3$/);
 
-    await page.getByRole("link", { name: "Back to timeline" }).click();
+    await page.getByRole("link", { name: "Back", exact: true }).click();
     await expect(page).toHaveURL(/\/en$/);
     await expect(readout(page)).toHaveText("1867");
   });
@@ -235,7 +258,7 @@ test.describe("Arabic and themes", () => {
 
     await page.goto("/ar/events/world-war-i");
     await expect(page.getByRole("note")).toContainText("غير متوفر بالعربية");
-    await expect(page.getByRole("link", { name: "العودة إلى الخط الزمني" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "رجوع", exact: true })).toBeVisible();
   });
 
   test("switches language from the toolbar", async ({ page }) => {
