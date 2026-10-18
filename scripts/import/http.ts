@@ -1,6 +1,7 @@
 /**
  * Polite HTTP for Wikimedia APIs: identifies itself, limits concurrency,
- * retries network errors, 429 and 5xx with exponential backoff, logs every call,
+ * retries network errors, 429 and 5xx with exponential backoff, backs off the
+ * whole host when it says "too many requests", logs every call,
  * and caches responses on disk so a re-run does not refetch.
  */
 import { createHash } from "node:crypto";
@@ -20,6 +21,8 @@ export type FetchOptions = {
 export class Http {
   private active = 0;
   private queue: (() => void)[] = [];
+  /** When a host answers 429, every request to it waits until this time. */
+  private pausedUntil = new Map<string, number>();
 
   constructor(
     private readonly opts: { cacheDir: string | null; concurrency?: number; retries?: number } = { cacheDir: null },
@@ -65,7 +68,10 @@ export class Http {
 
   private async fetchWithRetry(url: string, o: FetchOptions): Promise<string> {
     const retries = this.opts.retries ?? 5;
-    for (let attempt = 0; ; attempt++) {
+    const host = new URL(url).host;
+    for (let attempt = 0, limited = 0; ; attempt++) {
+      const wait = (this.pausedUntil.get(host) ?? 0) - Date.now();
+      if (wait > 0) await sleep(wait);
       try {
         // loggedFetch logs the call and throws (with .status) on non-2xx responses.
         const res = await loggedFetch({ service: o.service, operation: o.operation, meta: { attempt } }, url, {
@@ -79,14 +85,36 @@ export class Http {
         });
         return await res.text();
       } catch (err) {
-        const status = (err as { status?: number }).status;
+        const { status, retryAfter } = err as { status?: number; retryAfter?: string };
+        if (status === 429) {
+          // Rate limits clear with time, so they get more patience than other errors,
+          // and the pause applies to every request to that host, not just this one.
+          if (++limited > RATE_LIMIT_RETRIES) throw err;
+          attempt--;
+          const ms = Math.min(retryAfterMs(retryAfter) ?? 10_000 * 2 ** (limited - 1), 300_000);
+          this.pausedUntil.set(host, Math.max(this.pausedUntil.get(host) ?? 0, Date.now() + ms));
+          continue;
+        }
         // Network errors have no status and are worth retrying too.
-        const retriable = status == null || status === 429 || status >= 500;
+        const retriable = status == null || status >= 500;
         if (!retriable || attempt >= retries) throw err;
-        await new Promise((r) => setTimeout(r, Math.min(2000 * 2 ** attempt, 60_000)));
+        await sleep(Math.min(2000 * 2 ** attempt, 60_000));
       }
     }
   }
+}
+
+const RATE_LIMIT_RETRIES = 10;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Retry-After is either seconds or an HTTP date. */
+export function retryAfterMs(value: string | undefined, now = Date.now()): number | null {
+  if (!value) return null;
+  const secs = Number(value);
+  if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+  const at = Date.parse(value);
+  return Number.isNaN(at) ? null : Math.max(0, at - now);
 }
 
 export const chunk = <T>(xs: readonly T[], n: number): T[][] =>
