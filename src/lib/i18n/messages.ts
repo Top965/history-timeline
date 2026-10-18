@@ -67,6 +67,8 @@ export type Messages = {
     life: string;
     lifeHint: string;
     world: string;
+    worldHeading: string;
+    worldHint: (range: string) => string;
     showWorld: string;
     hideWorld: string;
     topics: string;
@@ -169,8 +171,10 @@ const en: Messages = {
     age: (n) => `aged ${n}`,
     biography: "Biography",
     life: "Life timeline",
-    lifeHint: "Their life from birth to death. World events of the time are shown faintly.",
+    lifeHint: "Their life from birth to death. On the timeline, world events of the time are shown faintly.",
     world: "In the world",
+    worldHeading: "Meanwhile in the world",
+    worldHint: (range) => `Major world events during their lifetime (${range}).`,
     showWorld: "Show world events",
     hideWorld: "Hide world events",
     topics: "Part of",
@@ -300,8 +304,10 @@ const ar: Messages = {
     age: (n) => `عن عمر ${n} سنة`,
     biography: "السيرة",
     life: "الخط الزمني لحياته",
-    lifeHint: "حياته من الولادة حتى الوفاة. تظهر أحداث العالم في ذلك الوقت بلون خافت.",
+    lifeHint: "حياته من الولادة حتى الوفاة. تظهر أحداث العالم في ذلك الوقت على الخط الزمني بلون خافت.",
     world: "في العالم",
+    worldHeading: "في العالم آنذاك",
+    worldHint: (range) => `أبرز أحداث العالم خلال حياته (${range}).`,
     showWorld: "اعرض أحداث العالم",
     hideWorld: "أخفِ أحداث العالم",
     topics: "ضمن",
