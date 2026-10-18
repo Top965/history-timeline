@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { locale as localeParam } from "next/root-params";
 import { siteUrl } from "@/lib/env";
 import { fontVariables } from "@/lib/fonts";
 import { dirOf, isLocale, LOCALES } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
+import { NavTrail } from "@/components/ui/navTrail";
 import { THEME_SCRIPT } from "@/components/ui/theme";
 import "../globals.css";
 
@@ -49,7 +51,12 @@ export default async function RootLayout({ children }: LayoutProps<"/[locale]">)
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Suspense fallback={null}>
+          <NavTrail />
+        </Suspense>
+      </body>
     </html>
   );
 }
