@@ -6,6 +6,7 @@ import { getMessages } from "@/lib/i18n/messages";
 import { CommonsFigure } from "@/components/story/CommonsFigure";
 import { FocusTimeline } from "@/components/timeline/FocusTimeline";
 import { WikipediaCredit } from "@/components/ui/WikipediaCredit";
+import { ArticleSections, CareerAndHonours, ProfileFacts } from "./WikiProfile";
 
 const H2 = "m-0 mt-2 font-display text-2xl font-medium";
 const LIFE_IMPORTANCE: Record<LifeItem["kind"], 1 | 2 | 3> = {
@@ -120,6 +121,7 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
               </>
             )}
           </dl>
+          {person.wikidataId && <ProfileFacts wikidataId={person.wikidataId} locale={locale} />}
           {page.topics.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted">{t.person.topics}</span>
@@ -151,6 +153,7 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
           endYear={person.deathYear}
           events={lifePins(page.life, locale)}
           context={context}
+          jumpToSections
         />
         <ol className="m-0 grid list-none gap-1.5 p-0" data-testid="life-list">
           {page.life.map((l, i) => (
@@ -182,6 +185,10 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
           ))}
         </ol>
       </section>
+
+      {person.wikidataId && (
+        <CareerAndHonours wikidataId={person.wikidataId} locale={locale} fallbackUrl={page.source?.url ?? null} />
+      )}
 
       {page.world.length > 0 && (
         <section aria-labelledby="world-heading" className="grid gap-2" data-testid="world-list">
@@ -229,6 +236,8 @@ export function PersonView({ locale, page, data }: { locale: Locale; page: Perso
           <WikipediaCredit locale={locale} source={page.source} />
         </section>
       )}
+
+      {person.wikidataId && <ArticleSections wikidataId={person.wikidataId} locale={locale} />}
 
       <section aria-labelledby="data-heading" className="grid max-w-[65ch] gap-2 text-sm" data-testid="about-data">
         <h2 id="data-heading" className="m-0 font-display text-lg font-medium">
