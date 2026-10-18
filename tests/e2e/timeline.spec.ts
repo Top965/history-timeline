@@ -151,7 +151,11 @@ test.describe("timeline", () => {
     // Wikipedia isn't reachable from tests, so answer the two lookup calls here.
     await page.route("**/api/people/lookup?*", (route) =>
       route.fulfill({
-        json: { candidates: [{ wikidataId: "Q615", name: "Lionel Messi", description: "Argentine footballer" }] },
+        json: {
+          candidates: [
+            { wikidataId: "Q615", name: "Lionel Messi", description: "Argentine footballer", kind: "person" },
+          ],
+        },
       }),
     );
     let posted: unknown = null;
@@ -161,11 +165,56 @@ test.describe("timeline", () => {
     });
     await page.goto("/en");
     await search(page, "messi");
-    await page.getByRole("button", { name: "Looking for someone else? Find “messi” on Wikipedia" }).click();
+    await page.getByRole("button", { name: "Not here? Find “messi” on Wikipedia" }).click();
     await expect(page.getByTestId("person-lookup")).toContainText("Argentine footballer");
     await page.getByRole("button", { name: "Add: Lionel Messi" }).click();
     await expect(page).toHaveURL(/\/en\/people\/lionel-messi$/);
     expect(posted).toEqual({ wikidataId: "Q615" });
+  });
+
+  test("finds an article that isn't on the site and reads it from Wikipedia", async ({ page }) => {
+    await page.route("**/api/people/lookup?*", (route) =>
+      route.fulfill({
+        json: {
+          candidates: [
+            { wikidataId: "Q193286", name: "بروتوكولات حكماء صهيون", description: "وثيقة مزورة", kind: "article" },
+          ],
+        },
+      }),
+    );
+    // Wikidata and Wikipedia, as the reader's browser would see them.
+    await page.route("https://www.wikidata.org/**", (route) =>
+      route.fulfill({
+        json: {
+          entities: {
+            Q193286: {
+              id: "Q193286",
+              labels: { ar: { value: "بروتوكولات حكماء صهيون" } },
+              descriptions: { ar: { value: "وثيقة مزورة معادية للسامية" } },
+              claims: {
+                P577: [{ mainsnak: { snaktype: "value", datavalue: { value: { time: "+1903-00-00T00:00:00Z" } } } }],
+              },
+              sitelinks: { arwiki: { title: "بروتوكولات حكماء صهيون" } },
+            },
+          },
+        },
+      }),
+    );
+    await page.route("https://ar.wikipedia.org/**", (route) =>
+      route.fulfill({
+        json: { query: { pages: [{ extract: "وثيقة مزيفة نُشرت عام 1903.\n\n\n== الأصل ==\nكتبها مخبر.\n" }] } },
+      }),
+    );
+    await page.goto("/ar");
+    await search(page, "بروتوكولات حكماء صهيون");
+    await page.getByRole("button", { name: /^غير موجود هنا؟/ }).click();
+    await page.getByRole("link", { name: "افتح: بروتوكولات حكماء صهيون" }).click();
+    await expect(page).toHaveURL(/\/ar\/wiki\/Q193286$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("بروتوكولات حكماء صهيون");
+    await expect(page.getByText("وثيقة مزورة معادية للسامية")).toBeVisible();
+    await expect(page.getByTestId("article-dates")).toContainText("1903");
+    await expect(page.getByText("وثيقة مزيفة نُشرت عام 1903.")).toBeVisible();
+    await expect(page.getByTestId("article-sections")).toContainText("الأصل");
   });
 
   test("has no serious accessibility problems", async ({ page }) => {

@@ -11,6 +11,8 @@ export type WikidataEntity = {
   id: string;
   claims?: Record<string, Claim[]>;
   sitelinks?: Record<string, { title: string }>;
+  labels?: Record<string, { value: string }>;
+  descriptions?: Record<string, { value: string }>;
 };
 export type Labels = Map<string, { en?: string; ar?: string }>;
 export type WikiLang = "en" | "ar";
@@ -34,6 +36,9 @@ export type CareerRow = {
   apps: number | null;
   goals: number | null;
 };
+
+export type DateKey = "published" | "inception" | "pointInTime" | "start" | "end";
+export type KeyDate = { key: DateKey; year: number };
 
 export type HonourGroup = { group: string | null; items: { title: string; years: string }[] };
 export type ArticleSection = { title: string; level: number; body: string };
@@ -147,6 +152,28 @@ export function careerRows(e: WikidataEntity, labels: Labels, lang: WikiLang): C
     .filter((r) => r.team)
     .sort((a, b) => a.startYear - b.startYear || (a.endYear ?? 1e9) - (b.endYear ?? 1e9));
 }
+
+const DATE_PROPS: [DateKey, string[]][] = [
+  ["pointInTime", ["P585"]],
+  ["start", ["P580"]],
+  ["end", ["P582", "P576"]],
+  ["inception", ["P571"]],
+  ["published", ["P577"]],
+];
+
+/** The years an entry gives for when something happened, was made or was published; nothing is guessed. */
+export function keyDates(e: WikidataEntity): KeyDate[] {
+  const out: KeyDate[] = [];
+  for (const [key, props] of DATE_PROPS) {
+    const years = props.flatMap((p) => claims(e, p).map((c) => timeYear(c.mainsnak)));
+    const year = years.find((y): y is number => y != null);
+    if (year != null) out.push({ key, year });
+  }
+  return out;
+}
+
+/** The text before the first heading of a plain-text extract: the article's lead. */
+export const articleLead = (text: string) => text.split(/\n={2,6}[^\n]*={2,6}\s*\n/)[0].trim();
 
 /**
  * Splits a plain-text extract (exsectionformat=wiki) into sections. The lead,

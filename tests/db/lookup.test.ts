@@ -1,5 +1,5 @@
 /**
- * "Look up anyone" against the test database, with Wikimedia faked.
+ * "Look up on Wikipedia" against the test database, with Wikimedia faked.
  * Cleans up after itself. Skipped without DATABASE_URL.
  */
 import postgres from "postgres";
@@ -16,6 +16,10 @@ const sql = url ? postgres(url, { max: 2, onnotice: () => {} }) : null;
 const NEW = "Q999999950";
 const HIDDEN = "Q999999951";
 const OTHER = "Q999999952";
+const DOC = "Q999999953";
+const DISAMBIG = "Q999999954";
+const EVENT = "Q999999955";
+const NO_ARTICLE = "Q999999956";
 
 function person(id: string, name: string): Entity {
   const e = structuredClone(fixturePeople.Q1316);
@@ -37,6 +41,8 @@ describe.skipIf(!url)("look up anyone", () => {
     lookup = await import("@/lib/people/lookup");
     await sql!`insert into people (wikidata_id, slug, birth_year, status)
       values (${HIDDEN}, 'hidden-lookupson', 1937, 'draft')`;
+    await sql!`insert into events (wikidata_id, slug, start_year, importance, status, published_at)
+      values (${EVENT}, 'battle-of-lookupson', 1900, 3, 'published', now())`;
   });
 
   afterEach(() => {
@@ -47,6 +53,7 @@ describe.skipIf(!url)("look up anyone", () => {
   afterAll(async () => {
     await sql!`delete from person_requests where wikidata_id like 'Q99999995%' or client_hash like 'test-%'`;
     await sql!`delete from people where wikidata_id like 'Q99999995%'`;
+    await sql!`delete from events where wikidata_id like 'Q99999995%'`;
     await sql?.end();
   });
 
@@ -57,7 +64,44 @@ describe.skipIf(!url)("look up anyone", () => {
       { id: "Q404", label: "Not on Wikidata" },
     ]);
     expect(await lookup.findCandidates("en", "lookupson")).toEqual([
-      { wikidataId: NEW, name: "Testa Lookupson", description: "test person" },
+      { wikidataId: NEW, name: "Testa Lookupson", description: "test person", kind: "person" },
+    ]);
+  });
+
+  it("also offers other articles to read, and events the site has under another name", async () => {
+    const thing = (id: string, type: string, sitelinks: Entity["sitelinks"]): Entity => ({
+      id,
+      claims: {
+        P31: [
+          {
+            mainsnak: {
+              snaktype: "value",
+              property: "P31",
+              datavalue: { type: "wikibase-entityid", value: { id: type } },
+            },
+            rank: "normal",
+          },
+        ],
+      },
+      sitelinks,
+    });
+    fakeWikimedia(
+      {
+        [DOC]: thing(DOC, "Q49848", { arwiki: { title: "وثيقة" } }),
+        [DISAMBIG]: thing(DISAMBIG, "Q4167410", { enwiki: { title: "Lookupson (disambiguation)" } }),
+        [EVENT]: thing(EVENT, "Q178561", { enwiki: { title: "Battle of Lookupson" } }),
+        [NO_ARTICLE]: thing(NO_ARTICLE, "Q49848", { frwiki: { title: "Document" } }),
+      },
+      [
+        { id: DOC, label: "وثيقة", description: "document" },
+        { id: DISAMBIG, label: "Lookupson" },
+        { id: EVENT, label: "معركة" },
+        { id: NO_ARTICLE, label: "Document" },
+      ],
+    );
+    expect(await lookup.findCandidates("ar", "lookupson")).toEqual([
+      { wikidataId: DOC, name: "وثيقة", description: "document", kind: "article" },
+      { wikidataId: EVENT, name: "معركة", description: null, kind: "event", slug: "battle-of-lookupson" },
     ]);
   });
 

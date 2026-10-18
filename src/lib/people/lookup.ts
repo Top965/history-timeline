@@ -13,8 +13,9 @@ import { logger } from "@/lib/log/logger";
 import type { Candidate } from "./types";
 
 /**
- * "Look up anyone": find people on Wikidata who aren't on the site yet, and add
- * one on request with the same steps as the weekly import.
+ * "Look up on Wikipedia": find people and other articles on Wikidata that the
+ * site's search doesn't have, and add a person on request with the same steps
+ * as the weekly import. Other articles are read in the browser, not stored.
  */
 
 /** New people one visitor may add per hour, and the whole site per day. */
@@ -38,7 +39,21 @@ export function clientHash(ip: string): string {
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 
-/** People matching `query` on Wikidata that have an English Wikipedia article and aren't on the site. */
+/** Wikimedia pages that are not articles about one thing. */
+const NOT_ARTICLES = new Set([
+  "Q4167410", // disambiguation page
+  "Q13406463", // list
+  "Q4167836", // category
+  "Q11266439", // template
+  "Q17633526", // news article
+]);
+
+/**
+ * Things matching `query` on Wikidata that have a Wikipedia article (English,
+ * or the reader's language) and aren't already found by the site's search:
+ * people to add, events the site has under another name, and any other
+ * article to read.
+ */
 export async function findCandidates(locale: Locale, query: string, limit = 5): Promise<Candidate[]> {
   const hits = await searchEntities(http, query, locale, 10);
   if (!hits.length) return [];
@@ -49,22 +64,42 @@ export async function findCandidates(locale: Locale, query: string, limit = 5): 
     [locale],
     ["P31"],
   );
-  const people = hits.filter((h) => {
+  const kinds = new Map<string, "person" | "article">();
+  for (const h of hits) {
     const e = entities.get(h.id);
-    return e && e.sitelinks?.enwiki && claims(e, "P31").some((c) => itemId(c.mainsnak) === "Q5");
-  });
-  if (!people.length) return [];
+    if (!e || !(e.sitelinks?.enwiki || e.sitelinks?.[`${locale}wiki`])) continue;
+    const types = claims(e, "P31").map((c) => itemId(c.mainsnak));
+    if (types.some((t) => t && NOT_ARTICLES.has(t))) continue;
+    // Only people with an English article can get a life timeline.
+    if (types.includes("Q5")) {
+      if (e.sitelinks?.enwiki) kinds.set(h.id, "person");
+    } else kinds.set(h.id, "article");
+  }
+  if (!kinds.size) return [];
+  const ids = [...kinds.keys()];
   // Every status counts: someone hidden after review must not be offered again.
-  const known = await serverWrite(
-    "people.known",
-    (sql) => sql<{ wikidata_id: string }[]>`
-      select wikidata_id from public.people where wikidata_id = any(${people.map((p) => p.id)}::text[])`,
-  );
-  const onSite = new Set(known.map((r) => r.wikidata_id));
-  return people
-    .filter((p) => !onSite.has(p.id))
+  const [people, events] = await Promise.all([
+    serverWrite(
+      "people.known",
+      (sql) => sql<{ wikidata_id: string }[]>`
+        select wikidata_id from public.people where wikidata_id = any(${ids}::text[])`,
+    ),
+    publicRead(
+      "events.known",
+      (tx) => tx<{ wikidata_id: string; slug: string }[]>`
+        select wikidata_id, slug from public.events where wikidata_id = any(${ids}::text[]) and status = 'published'`,
+    ),
+  ]);
+  const onSite = new Set(people.map((r) => r.wikidata_id));
+  const eventSlugs = new Map(events.map((r) => [r.wikidata_id, r.slug]));
+  return hits
+    .filter((h) => kinds.has(h.id) && !onSite.has(h.id))
     .slice(0, limit)
-    .map((p) => ({ wikidataId: p.id, name: p.label ?? p.id, description: p.description }));
+    .map((h): Candidate => {
+      const slug = eventSlugs.get(h.id);
+      const base = { wikidataId: h.id, name: h.label ?? h.id, description: h.description };
+      return slug ? { ...base, kind: "event", slug } : { ...base, kind: kinds.get(h.id)! };
+    });
 }
 
 /** Adds one person from Wikidata (or finds them if already there) and returns their page. */

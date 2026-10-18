@@ -3,7 +3,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { logger, serializeError } from "@/lib/log/logger";
 import { findCandidates } from "@/lib/people/lookup";
 
-/** GET /api/people/lookup?locale=en&q=lionel → { candidates } people on Wikidata not yet on the site. */
+/** GET /api/people/lookup?locale=en&q=lionel → { candidates } people and articles on Wikidata not found by the site's search. */
 export async function GET(request: NextRequest) {
   const requestId = request.headers.get("x-vercel-id") ?? crypto.randomUUID();
   const params = request.nextUrl.searchParams;

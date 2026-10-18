@@ -5,7 +5,9 @@
  * page that shows it.
  */
 import {
+  articleLead,
   careerRows,
+  keyDates,
   parseArticle,
   parseHonours,
   profileFacts,
@@ -15,12 +17,19 @@ import {
   type CareerRow,
   type Fact,
   type HonourGroup,
+  type KeyDate,
   type Labels,
   type WikiLang,
   type WikidataEntity,
 } from "./profile";
 
 export type WikiProfile = {
+  /** The entry's name and one-line description, in the reader's language where there is one. */
+  title: string;
+  description: string | null;
+  /** The article's opening paragraphs. */
+  lead: string;
+  dates: KeyDate[];
   facts: Fact[];
   career: CareerRow[];
   honours: HonourGroup[];
@@ -65,22 +74,29 @@ async function articleText(lang: WikiLang, title: string): Promise<string> {
 async function load(wikidataId: string, lang: WikiLang): Promise<WikiProfile> {
   const res = await getJson<{ entities?: Record<string, WikidataEntity> }>(WIKIDATA, {
     action: "wbgetentities",
-    props: "claims|sitelinks",
+    props: "claims|sitelinks|labels|descriptions",
+    languages: "en|ar",
     sitefilter: "enwiki|arwiki",
     ids: wikidataId,
   });
   const entity = res.entities?.[wikidataId];
   if (!entity?.claims) throw new Error(`No Wikidata entry for ${wikidataId}`);
 
-  // The article in the reader's language when there is one, otherwise English.
-  const site = entity.sitelinks?.[`${lang}wiki`] ? lang : entity.sitelinks?.enwiki ? "en" : null;
+  // The article in the reader's language when there is one, otherwise the other one.
+  const other: WikiLang = lang === "ar" ? "en" : "ar";
+  const site = entity.sitelinks?.[`${lang}wiki`] ? lang : entity.sitelinks?.[`${other}wiki`] ? other : null;
   const title = site ? entity.sitelinks![`${site}wiki`].title : null;
   const [labels, text] = await Promise.all([
     labelsFor(referencedItems(entity)),
     site && title ? articleText(site, title).catch(() => "") : Promise.resolve(""),
   ]);
   const sections = parseArticle(text);
+  const pick = (m: WikidataEntity["labels"]) => m?.[lang]?.value ?? m?.[other]?.value ?? null;
   return {
+    title: pick(entity.labels) ?? title ?? wikidataId,
+    description: pick(entity.descriptions),
+    lead: articleLead(text),
+    dates: keyDates(entity),
     facts: profileFacts(entity, labels, lang),
     career: careerRows(entity, labels, lang),
     honours: parseHonours(sections),

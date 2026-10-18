@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n/config";
@@ -14,8 +15,10 @@ type State =
   | { kind: "error"; message: string; candidates: Candidate[] };
 
 /**
- * "Look up anyone": finds people on Wikipedia who aren't on the site yet and
- * adds one on request, then opens their new page. Remount it per query.
+ * "Look up on Wikipedia": finds what the site's search doesn't have. A person
+ * is added on request and their new page opens; an event the site has under
+ * another name opens its page; anything else opens as a Wikipedia article.
+ * Remount it per query.
  */
 export function PersonLookup({ locale, query }: { locale: Locale; query: string }) {
   const t = getMessages(locale).search.lookup;
@@ -87,15 +90,25 @@ export function PersonLookup({ locale, query }: { locale: Locale; query: string 
                 </small>
               )}
             </span>
-            <button
-              type="button"
-              className="chip"
-              disabled={state.kind === "adding"}
-              aria-label={`${t.add}: ${c.name}`}
-              onClick={() => add(c)}
-            >
-              {busy ? t.adding : t.add}
-            </button>
+            {c.kind === "person" ? (
+              <button
+                type="button"
+                className="chip"
+                disabled={state.kind === "adding"}
+                aria-label={`${t.add}: ${c.name}`}
+                onClick={() => add(c)}
+              >
+                {busy ? t.adding : t.add}
+              </button>
+            ) : (
+              <Link
+                href={c.kind === "event" ? `/${locale}/events/${c.slug}` : `/${locale}/wiki/${c.wikidataId}`}
+                className="chip text-ink no-underline"
+                aria-label={`${t.open}: ${c.name}`}
+              >
+                {t.open}
+              </Link>
+            )}
           </div>
         );
       })}
