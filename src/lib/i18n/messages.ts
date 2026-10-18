@@ -292,7 +292,7 @@ const en: Messages = {
       country: "Country",
       former_country: "Former state",
       people: "People group",
-      religion: "Religion",
+      religion: "Religion or belief",
     },
     groupNote:
       "Built from Wikidata: an event or person is listed when Wikidata links them to this page, as shown next to each one. Many aren’t recorded there, so this list is incomplete.",
@@ -482,7 +482,7 @@ const ar: Messages = {
       country: "دولة",
       former_country: "دولة سابقة",
       people: "شعب",
-      religion: "دين",
+      religion: "دين أو معتقد",
     },
     groupNote:
       "مبنية من ويكي بيانات: يظهر الحدث أو الشخص هنا عندما تربطه ويكي بيانات بهذه الصفحة، كما هو مبيَّن بجانب كل منهم. كثيرون غير مسجلين هناك، لذا هذه القائمة غير مكتملة.",

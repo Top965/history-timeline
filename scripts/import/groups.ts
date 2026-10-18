@@ -121,7 +121,10 @@ function names(e: Entity, lang: "en" | "ar"): string[] {
     const { text, language } = v.value as { text: string; language: string };
     return language === lang ? [text.toLowerCase().trim()] : [];
   });
-  return [...new Set([...entityKeywords(e, lang, 20), ...demonyms])].slice(0, 30);
+  // Two-letter codes ("de", "el") would match ordinary words, and Wikidata marks some
+  // items as "(value for P140 religion)"; neither is a name anyone types.
+  const useful = (n: string) => n.length >= 3 && !n.includes("(value for");
+  return [...new Set([...entityKeywords(e, lang, 30), ...demonyms])].filter(useful).slice(0, 30);
 }
 
 /**

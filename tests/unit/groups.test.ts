@@ -138,7 +138,7 @@ describe("countries, people groups and religions", () => {
     const egypt: Entity = {
       id: "Q79",
       labels: { en: { value: "Egypt" }, ar: { value: "مصر" } },
-      aliases: { en: [{ value: "Arab Republic of Egypt" }] },
+      aliases: { en: [{ value: "Arab Republic of Egypt" }, { value: "EG" }] },
       sitelinks: { enwiki: { title: "Egypt" } },
       claims: {
         P571: [time("P571", "+1922-00-00T00:00:00Z")],
@@ -166,6 +166,7 @@ describe("countries, people groups and religions", () => {
     expect(group.text.en).toMatchObject({ name: "Egypt", summary: "Egypt is a country." });
     expect(group.text.en.keywords).toEqual(expect.arrayContaining(["egypt", "arab republic of egypt", "egyptian"]));
     expect(group.text.ar?.keywords).toEqual(["مصر", "مصري"]);
+    expect(group.text.en.keywords).not.toContain("eg");
   });
 
   it("ends a former state's page when it ended", () => {
