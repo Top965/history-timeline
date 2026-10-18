@@ -81,6 +81,21 @@ export type Messages = {
     factsFrom: string;
     wikidataEntry: string;
     neverInvented: string;
+    profile: {
+      heading: string;
+      facts: Record<import("@/lib/wiki/profile").FactKey, string>;
+      career: string;
+      years: string;
+      team: string;
+      apps: string;
+      goals: string;
+      honours: string;
+      article: string;
+      articleHint: string;
+      loading: string;
+      failed: string;
+      openWikipedia: string;
+    };
     notes: Record<DataNote, string>;
   };
   topic: {
@@ -197,6 +212,31 @@ const en: Messages = {
     wikidataEntry: "Wikidata entry",
     neverInvented:
       "We only show events that the sources give a date for. Anything without a date is left out rather than guessed.",
+    profile: {
+      heading: "Profile",
+      facts: {
+        fullName: "Full name",
+        height: "Height",
+        positions: "Positions",
+        occupation: "Occupation",
+        citizenship: "Citizenship",
+        currentTeam: "Current team",
+        number: "Number",
+        notableWorks: "Notable works",
+        education: "Education",
+      },
+      career: "Career",
+      years: "Years",
+      team: "Team",
+      apps: "Apps",
+      goals: "Goals",
+      honours: "Honours",
+      article: "From Wikipedia",
+      articleHint: "The full article, section by section.",
+      loading: "Loading from Wikipedia and Wikidata…",
+      failed: "Couldn’t load more details right now.",
+      openWikipedia: "Read on Wikipedia",
+    },
     notes: {
       "birth-date-disputed": "Sources disagree about the year of birth.",
       "death-not-recorded": "No date of death is recorded, although they were born long ago.",
@@ -329,6 +369,31 @@ const ar: Messages = {
     factsFrom: "التواريخ وأحداث الحياة مأخوذة من",
     wikidataEntry: "صفحته في ويكي بيانات",
     neverInvented: "نعرض فقط الأحداث التي تذكر المصادر تاريخها. ما ليس له تاريخ نتركه ولا نخمّنه.",
+    profile: {
+      heading: "نبذة",
+      facts: {
+        fullName: "الاسم الكامل",
+        height: "الطول",
+        positions: "المركز",
+        occupation: "المهنة",
+        citizenship: "الجنسية",
+        currentTeam: "الفريق الحالي",
+        number: "الرقم",
+        notableWorks: "أبرز الأعمال",
+        education: "التعليم",
+      },
+      career: "المسيرة",
+      years: "السنوات",
+      team: "الفريق",
+      apps: "مباريات",
+      goals: "أهداف",
+      honours: "الإنجازات",
+      article: "من ويكيبيديا",
+      articleHint: "المقال كاملًا، قسمًا قسمًا.",
+      loading: "جارٍ التحميل من ويكيبيديا وويكي بيانات…",
+      failed: "تعذّر تحميل مزيد من التفاصيل الآن.",
+      openWikipedia: "اقرأ في ويكيبيديا",
+    },
     notes: {
       "birth-date-disputed": "تختلف المصادر في سنة الولادة.",
       "death-not-recorded": "لا يوجد تاريخ وفاة مسجّل، رغم أنه وُلد منذ زمن بعيد.",
