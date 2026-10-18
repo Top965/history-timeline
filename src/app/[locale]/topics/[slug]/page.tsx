@@ -7,8 +7,9 @@ import { getPublishedTopicSlugs, getTimelineData, getTopicPage } from "@/lib/db/
 import { formatRange } from "@/lib/format/years";
 import { isLocale, LOCALES } from "@/lib/i18n/config";
 
+/** Hand-picked topics are built ahead of time; countries, people groups and religions on their first visit. */
 export async function generateStaticParams() {
-  const topics = await getPublishedTopicSlugs();
+  const topics = (await getPublishedTopicSlugs()).filter((t) => t.kind === "topic");
   return topics.length ? topics.map(({ slug }) => ({ slug })) : [{ slug: "none" }];
 }
 

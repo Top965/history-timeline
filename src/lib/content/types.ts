@@ -26,8 +26,12 @@ export type TimelineEvent = {
   keywords: string[];
 };
 
+/** A hand-picked topic, or a page made from Wikidata for a country, former state, people group or religion. */
+export type TopicKind = "topic" | "country" | "former_country" | "people" | "religion";
+
 export type Topic = {
   slug: string;
+  kind: TopicKind;
   name: string;
   summary: string;
   summaryLocale: Locale;
@@ -78,6 +82,7 @@ export type TextSource = { url: string; title: string; license: string | null };
 
 export type TopicLink = {
   slug: string;
+  kind: TopicKind;
   name: string;
   startYear: number;
   endYear: number | null;
@@ -131,19 +136,33 @@ export type PersonPage = {
   topics: TopicLink[];
 };
 
+/** Why an event or person is on a country, people group or religion page: a Wikidata statement. */
+export type MemberSource = {
+  wikidataId: string;
+  /** "P17", or a chain such as "P276>P17" (the country of the location). */
+  via: string;
+};
+
 export type TopicEventItem = EventLink & {
   summary: string;
   place: string;
   importance: 1 | 2 | 3;
   textLocale: Locale;
   hasFullStory: boolean;
+  source: MemberSource | null;
 };
 
 export type TopicPage = {
   topic: Topic & { isSensitive: boolean };
   source: TextSource | null;
+  /** The best-known events (all of them for hand-picked topics), in time order. */
   events: TopicEventItem[];
-  people: PersonCard[];
+  eventTotal: number;
+  people: (PersonCard & { source: MemberSource | null })[];
+  peopleTotal: number;
+  /** Countries that replaced a former state, and former states on a country's land. */
+  successors: TopicLink[];
+  predecessors: TopicLink[];
 };
 
 export type CommonsImage = {

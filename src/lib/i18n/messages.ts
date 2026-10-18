@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
 import type { DataNote } from "@/lib/people/notes";
+import type { TopicKind } from "@/lib/content/types";
 
 export type Messages = {
   brand: string;
@@ -117,6 +118,15 @@ export type Messages = {
     sensitive: string;
     empty: string;
     readMore: string;
+    kinds: Record<TopicKind, string>;
+    /** Why a country, people group or religion page may be missing things. */
+    groupNote: string;
+    shownOf: (shown: number, total: number) => string;
+    peopleShownOf: (shown: number, total: number) => string;
+    source: string;
+    via: (via: string) => string;
+    successors: string;
+    predecessors: string;
   };
   credit: { fromWikipedia: string; license: string };
   related: { people: string; topics: string };
@@ -277,6 +287,29 @@ const en: Messages = {
       "This topic is contested. Event names and summaries follow Wikipedia, and each event links to its source article.",
     empty: "Events for this topic are being added.",
     readMore: "Read more",
+    kinds: {
+      topic: "Topic timeline",
+      country: "Country",
+      former_country: "Former state",
+      people: "People group",
+      religion: "Religion",
+    },
+    groupNote:
+      "Built from Wikidata: an event or person is listed when Wikidata links them to this page, as shown next to each one. Many aren’t recorded there, so this list is incomplete.",
+    shownOf: (shown, total) => `Showing the ${shown} best-known of ${total} events.`,
+    peopleShownOf: (shown, total) => `Showing the ${shown} best-known of ${total} people.`,
+    source: "Source: Wikidata",
+    via: (via) =>
+      ({
+        P17: "country",
+        "P276>P17": "country of the location",
+        "P19>P17": "country of birthplace",
+        P27: "citizenship",
+        P140: "religion",
+        P172: "ethnic group",
+      })[via] ?? via,
+    successors: "Countries on this land today",
+    predecessors: "Earlier states here",
   },
   credit: { fromWikipedia: "Text from the Wikipedia article", license: "CC BY-SA 4.0" },
   related: { people: "People", topics: "Topics" },
@@ -444,6 +477,29 @@ const ar: Messages = {
     sensitive: "هذا موضوع خلافي. أسماء الأحداث وملخصاتها مأخوذة من ويكيبيديا، وكل حدث مرتبط بمقالته المصدر.",
     empty: "نعمل على إضافة أحداث هذا الموضوع.",
     readMore: "اقرأ المزيد",
+    kinds: {
+      topic: "خط زمني لموضوع",
+      country: "دولة",
+      former_country: "دولة سابقة",
+      people: "شعب",
+      religion: "دين",
+    },
+    groupNote:
+      "مبنية من ويكي بيانات: يظهر الحدث أو الشخص هنا عندما تربطه ويكي بيانات بهذه الصفحة، كما هو مبيَّن بجانب كل منهم. كثيرون غير مسجلين هناك، لذا هذه القائمة غير مكتملة.",
+    shownOf: (shown, total) => `نعرض أشهر ${shown} من أصل ${total} حدثًا.`,
+    peopleShownOf: (shown, total) => `نعرض أشهر ${shown} من أصل ${total} شخصًا.`,
+    source: "المصدر: ويكي بيانات",
+    via: (via) =>
+      ({
+        P17: "الدولة",
+        "P276>P17": "دولة المكان",
+        "P19>P17": "دولة مكان الولادة",
+        P27: "الجنسية",
+        P140: "الدين",
+        P172: "المجموعة العرقية",
+      })[via] ?? via,
+    successors: "الدول القائمة على هذه الأرض اليوم",
+    predecessors: "دول سابقة هنا",
   },
   credit: { fromWikipedia: "النص من مقالة ويكيبيديا", license: "CC BY-SA 4.0" },
   related: { people: "شخصيات", topics: "مواضيع" },

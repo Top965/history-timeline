@@ -67,13 +67,15 @@ export const importanceFor = (sitelinks: number): 1 | 2 | 3 => (sitelinks >= 80 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const sentence = (s: string) => (/[.!?؟。]$/.test(s) ? s : `${s}.`);
 
-function keywords(e: Entity, lang: "en" | "ar"): string[] {
+/** The label and other names of an item, lowercased, for search. */
+export function entityKeywords(e: Entity, lang: "en" | "ar", max = 10): string[] {
   const names = [label(e, lang), ...(e.aliases?.[lang] ?? []).map((a) => a.value)].filter((x): x is string => !!x);
   return [...new Set(names.map((n) => n.toLowerCase().trim()).filter((n) => n.length >= 2 && n.length <= 80))].slice(
     0,
-    10,
+    max,
   );
 }
+const keywords = (e: Entity, lang: "en" | "ar") => entityKeywords(e, lang);
 
 function source(lead: Lead | undefined): ImportSource | null {
   return lead ? { url: lead.url, title: lead.title, revisionId: lead.revisionId } : null;
@@ -393,6 +395,7 @@ export function buildTopic(
   return {
     slug: cfg.slug,
     wikidataId: e.id,
+    kind: "topic",
     isSensitive: !!cfg.sensitive,
     startYear,
     endYear,
@@ -419,6 +422,8 @@ export function buildTopic(
     },
     events: members.map((m) => m.wikidataId),
     people,
+    via: {},
+    successors: [],
   };
 }
 
