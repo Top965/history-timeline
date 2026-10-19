@@ -26,6 +26,7 @@ export type Claim = {
   mainsnak: Snak;
   rank: "preferred" | "normal" | "deprecated";
   qualifiers?: Record<string, Snak[]>;
+  references?: { snaks: Record<string, Snak[]> }[];
 };
 
 export type Entity = {

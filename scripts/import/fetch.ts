@@ -20,8 +20,17 @@ import {
   type Span,
 } from "./build";
 import { commonsTitle, getImages } from "./commons";
+import { buildGroup, currentCountry, groupKind, groupLinks, MIN_GROUP_MEMBERS, type GroupLink } from "./groups";
 import { chunk, type Http } from "./http";
-import { BundleSchema, EventSchema, PersonSchema, type Bundle, type ImportEvent } from "./model";
+import {
+  BundleSchema,
+  EventSchema,
+  PersonSchema,
+  type Bundle,
+  type ImportEvent,
+  type ImportPerson,
+  type ImportTopic,
+} from "./model";
 import { claims, getEntities, itemId, label, sparql, type Entity } from "./wikidata";
 import { getLeads, resolveTitles } from "./wikipedia";
 
@@ -101,6 +110,12 @@ export const USED_CLAIMS = [
   "P607",
   "P166",
   "P1344",
+  // Countries, people groups and religions (groups.ts).
+  "P27",
+  "P140",
+  "P172",
+  "P1366",
+  "P1549",
 ];
 
 /** Recurring things found by class that are not moments in history (holidays, league seasons). */
@@ -408,6 +423,8 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
     return t ? [t] : [];
   });
 
+  topics.push(...(await fetchGroups(http, events, people, eventById, builtPeople, topics, ctx)));
+
   // Only keep photos something uses.
   const usedImages = new Set([...builtEvents, ...builtPeople].map((r) => r.image).filter(Boolean));
   const bundle: Bundle = {
@@ -429,4 +446,112 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
     "bundle built",
   );
   return BundleSchema.parse(bundle);
+}
+
+/**
+ * Countries, former states, people groups and religions (see groups.ts). A group that
+ * is already a hand-picked topic (the Ottoman Empire) adds its members to that topic
+ * instead, unless the topic is sensitive: those lists are exactly what the config says.
+ */
+async function fetchGroups(
+  http: Http,
+  events: Entity[],
+  people: Entity[],
+  eventById: Map<string, ImportEvent>,
+  builtPeople: ImportPerson[],
+  topics: ImportTopic[],
+  ctx: BuildContext,
+): Promise<ImportTopic[]> {
+  const log = logger.child({ kind: "import", stage: "fetch.groups" });
+  const personById = new Map(builtPeople.map((p) => [p.wikidataId, p]));
+  const onSite = (l: GroupLink) => (l.type === "event" ? eventById.has(l.member) : personById.has(l.member));
+
+  // Which country each event location and birthplace is in today.
+  const placeIds = [...new Set(pointedTo([...events, ...people], ["P276", "P19"]))];
+  const places = await getEntities(http, placeIds, ["claims"], undefined, ["P17"]);
+  const placeCountry = new Map<string, string>();
+  for (const [id, e] of places) {
+    const country = currentCountry(e);
+    if (country) placeCountry.set(id, country);
+  }
+
+  const links = groupLinks(
+    events.filter((e) => eventById.has(e.id)),
+    people.filter((p) => personById.has(p.id)),
+    placeCountry,
+  ).filter(onSite);
+  const byGroup = new Map<string, GroupLink[]>();
+  for (const l of links) byGroup.set(l.group, [...(byGroup.get(l.group) ?? []), l]);
+
+  const entities = await getEntities(
+    http,
+    [...byGroup.keys()],
+    ["labels", "descriptions", "aliases", "claims", "sitelinks"],
+    undefined,
+    USED_CLAIMS,
+  );
+  const chosen = [...entities.values()].flatMap((e) => {
+    const members = byGroup.get(e.id) ?? [];
+    const kind = groupKind(e, new Set(members.map((m) => m.hint)));
+    if (!kind || (kind !== "country" && members.length < MIN_GROUP_MEMBERS)) return [];
+    return [{ e, kind, members }];
+  });
+  const leads = await leadsFor(
+    http,
+    chosen.map((c) => c.e),
+  );
+  const groupCtx: BuildContext = { ...ctx, leads };
+
+  const byQid = new Map(topics.map((t) => [t.wikidataId, t]));
+  const used = new Set(topics.map((t) => t.slug));
+  const out: ImportTopic[] = [];
+  let merged = 0;
+  for (const { e, kind, members } of chosen) {
+    const via = Object.fromEntries(members.map((m) => [m.member, m.via]));
+    const memberEvents = members.flatMap((m) => (m.type === "event" ? [eventById.get(m.member)!] : []));
+    const memberPeople = members
+      .flatMap((m) => (m.type === "person" ? [personById.get(m.member)!] : []))
+      .sort((a, b) => b.sitelinks - a.sitelinks || a.wikidataId.localeCompare(b.wikidataId));
+
+    const topic = byQid.get(e.id);
+    if (topic) {
+      if (topic.isSensitive) continue;
+      const known = new Set([...topic.events, ...topic.people]);
+      const added = [...memberEvents, ...memberPeople].filter((m) => !known.has(m.wikidataId));
+      topic.events.push(...memberEvents.filter((m) => !known.has(m.wikidataId)).map((m) => m.wikidataId));
+      topic.people.push(...memberPeople.filter((m) => !known.has(m.wikidataId)).map((m) => m.wikidataId));
+      for (const m of added) topic.via[m.wikidataId] = via[m.wikidataId];
+      merged++;
+      continue;
+    }
+    const group = buildGroup(e, kind, memberEvents, memberPeople, via, groupCtx);
+    if (!group) continue;
+    const slug = [group.slug, `${group.slug}-${e.id.toLowerCase()}`].find((s) => !used.has(s))!;
+    used.add(slug);
+    out.push({ ...group, slug });
+  }
+
+  // Former states point to the countries that replaced them.
+  const countries = new Set(out.filter((g) => g.kind === "country").map((g) => g.wikidataId));
+  for (const g of out) {
+    if (g.kind !== "former_country") continue;
+    const e = entities.get(g.wikidataId)!;
+    g.successors = claims(e, "P1366")
+      .map((c) => itemId(c.mainsnak))
+      .filter((id): id is string => !!id && countries.has(id));
+  }
+
+  const count = (kind: string) => out.filter((g) => g.kind === kind).length;
+  log.info(
+    {
+      links: links.length,
+      countries: count("country"),
+      formerCountries: count("former_country"),
+      peoples: count("people"),
+      religions: count("religion"),
+      mergedIntoTopics: merged,
+    },
+    "groups built",
+  );
+  return out;
 }

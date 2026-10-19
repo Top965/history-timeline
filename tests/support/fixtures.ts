@@ -37,6 +37,7 @@ export function seedTimelineData(currentYear = 2026): SearchData {
     })),
     topics: seed.topics.map((t) => ({
       slug: t.slug,
+      kind: "topic" as const,
       name: t.translations.en.name,
       summary: t.translations.en.summary!,
       summaryLocale: "en",

@@ -296,8 +296,23 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
     select r.id, r.locale, r.label from jsonb_to_recordset(${json(tx, lifeTexts)}::jsonb) as r(id uuid, locale text, label text)`;
 
   // 6. Topics. Hand-written topics keep their dates, name and summary; they gain events and people.
+  // Countries, people groups and religions keep the slug they first got, found by Wikidata id.
+  const topicsExisting = await tx<{ slug: string; wikidata_id: string | null }[]>`
+    select slug, wikidata_id from public.topics`;
+  const topicSlugOwner = new Map(topicsExisting.map((r) => [r.slug, r.wikidata_id]));
+  const topicSlugByQid = new Map(topicsExisting.filter((r) => r.wikidata_id).map((r) => [r.wikidata_id!, r.slug]));
+  for (const t of bundle.topics) if (t.kind === "topic") topicSlugOwner.set(t.slug, t.wikidataId);
+  const topicSlug = new Map(
+    bundle.topics.map((t) => [
+      t.wikidataId,
+      t.kind === "topic"
+        ? t.slug
+        : (topicSlugByQid.get(t.wikidataId) ?? freeSlug(t.slug, t.wikidataId, topicSlugOwner)),
+    ]),
+  );
   const topicRows = bundle.topics.map((t) => ({
-    slug: t.slug,
+    slug: topicSlug.get(t.wikidataId)!,
+    kind: t.kind,
     wikidataId: t.wikidataId,
     isSensitive: t.isSensitive,
     startYear: t.startYear,
@@ -305,18 +320,23 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
     isApproximate: t.isApproximate,
   }));
   const topicIdRows = await tx<{ id: string; slug: string }[]>`
-    insert into public.topics (slug, wikidata_id, is_sensitive, start_year, end_year, is_approximate, status, published_at)
-    select r.slug, r."wikidataId", r."isSensitive", r."startYear", r."endYear", r."isApproximate", 'published', ${now}::timestamptz
-    from jsonb_to_recordset(${json(tx, topicRows)}::jsonb) as r(slug text, "wikidataId" text, "isSensitive" boolean,
-      "startYear" int, "endYear" int, "isApproximate" boolean)
+    insert into public.topics (slug, kind, wikidata_id, is_sensitive, start_year, end_year, is_approximate, status, published_at)
+    select r.slug, r.kind::public.topic_kind, r."wikidataId", r."isSensitive", r."startYear", r."endYear", r."isApproximate",
+      'published', ${now}::timestamptz
+    from jsonb_to_recordset(${json(tx, topicRows)}::jsonb) as r(slug text, kind text, "wikidataId" text,
+      "isSensitive" boolean, "startYear" int, "endYear" int, "isApproximate" boolean)
     on conflict (slug) do update set
+      -- A hand-picked topic stays one, even when a country of the same name merges into it.
+      kind = case when public.topics.kind = 'topic' then public.topics.kind else excluded.kind end,
       wikidata_id = coalesce(public.topics.wikidata_id, excluded.wikidata_id),
       is_sensitive = public.topics.is_sensitive or excluded.is_sensitive,
       start_year = case when exists (select 1 from public.topic_translations tt where tt.topic_id = public.topics.id and tt.origin = 'manual') then public.topics.start_year else excluded.start_year end,
       end_year = case when exists (select 1 from public.topic_translations tt where tt.topic_id = public.topics.id and tt.origin = 'manual') then public.topics.end_year else excluded.end_year end,
       is_approximate = case when exists (select 1 from public.topic_translations tt where tt.topic_id = public.topics.id and tt.origin = 'manual') then public.topics.is_approximate else excluded.is_approximate end
     returning id, slug`;
-  const topicId = new Map(topicIdRows.map((r) => [r.slug, r.id]));
+  const idBySlug = new Map(topicIdRows.map((r) => [r.slug, r.id]));
+  const topicId = new Map(bundle.topics.map((t) => [t.slug, idBySlug.get(topicSlug.get(t.wikidataId)!)!]));
+  const topicByQid = new Map(bundle.topics.map((t) => [t.wikidataId, topicId.get(t.slug)!]));
 
   const topicTexts = bundle.topics.flatMap((t) =>
     (["en", "ar"] as const).flatMap((locale) => {
@@ -345,13 +365,21 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
       origin = excluded.origin, source_id = excluded.source_id
       where public.topic_translations.origin <> 'manual'`;
 
+  // Countries, people groups and religions are rebuilt from Wikidata on every run.
+  const groupIds = bundle.topics.filter((t) => t.kind !== "topic").map((t) => topicId.get(t.slug)!);
+  await tx`
+    delete from public.topic_events te using public.topics t
+    where te.topic_id = t.id and t.id = any(${groupIds}::uuid[]) and t.kind <> 'topic'`;
   const members = bundle.topics.flatMap((t) =>
-    t.events.flatMap((q) => (eventIds.get(q) ? [{ topicId: topicId.get(t.slug)!, eventId: eventIds.get(q)! }] : [])),
+    t.events.flatMap((q) =>
+      eventIds.get(q) ? [{ topicId: topicId.get(t.slug)!, eventId: eventIds.get(q)!, via: t.via[q] ?? null }] : [],
+    ),
   );
   const memberResult = await tx`
-    insert into public.topic_events (topic_id, event_id)
-    select r."topicId", r."eventId" from jsonb_to_recordset(${json(tx, members)}::jsonb) as r("topicId" uuid, "eventId" uuid)
-    on conflict do nothing`;
+    insert into public.topic_events (topic_id, event_id, via)
+    select r."topicId", r."eventId", r.via
+    from jsonb_to_recordset(${json(tx, members)}::jsonb) as r("topicId" uuid, "eventId" uuid, via text)
+    on conflict (topic_id, event_id) do update set via = excluded.via where excluded.via is not null`;
   // Every topic's events run in time order.
   await tx`
     update public.topic_events te set sort_order = o.n
@@ -365,12 +393,28 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
   await tx`delete from public.topic_people where topic_id = any(${topicIds}::uuid[])`;
   const topicPeople = bundle.topics.flatMap((t) =>
     t.people.flatMap((q, i) =>
-      personId.get(q) ? [{ topicId: topicId.get(t.slug)!, personId: personId.get(q)!, n: i }] : [],
+      personId.get(q)
+        ? [{ topicId: topicId.get(t.slug)!, personId: personId.get(q)!, n: i, via: t.via[q] ?? null }]
+        : [],
     ),
   );
   await tx`
-    insert into public.topic_people (topic_id, person_id, sort_order)
-    select r."topicId", r."personId", r.n from jsonb_to_recordset(${json(tx, topicPeople)}::jsonb) as r("topicId" uuid, "personId" uuid, n int)
+    insert into public.topic_people (topic_id, person_id, sort_order, via)
+    select r."topicId", r."personId", r.n, r.via
+    from jsonb_to_recordset(${json(tx, topicPeople)}::jsonb) as r("topicId" uuid, "personId" uuid, n int, via text)
+    on conflict do nothing`;
+
+  await tx`delete from public.topic_successors where topic_id = any(${topicIds}::uuid[])`;
+  const successors = bundle.topics.flatMap((t) =>
+    t.successors.flatMap((q) =>
+      topicByQid.get(q) ? [{ topicId: topicId.get(t.slug)!, successorId: topicByQid.get(q)! }] : [],
+    ),
+  );
+  await tx`
+    insert into public.topic_successors (topic_id, successor_id)
+    select r."topicId", r."successorId"
+    from jsonb_to_recordset(${json(tx, successors)}::jsonb) as r("topicId" uuid, "successorId" uuid)
+    where r."topicId" <> r."successorId"
     on conflict do nothing`;
 
   return {

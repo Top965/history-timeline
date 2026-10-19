@@ -17,6 +17,7 @@ import type {
   TimelineEvent,
   TimelineTile,
   Topic,
+  TopicKind,
   TopicLink,
   TopicPage,
 } from "@/lib/content/types";
@@ -69,6 +70,7 @@ type EventRow = {
 
 type TopicRow = {
   slug: string;
+  kind: TopicKind;
   name: string;
   summary: string | null;
   summary_locale: string;
@@ -159,7 +161,7 @@ async function loadEvents(tx: Tx, locale: Locale, f: EventFilter): Promise<Timel
 
 async function loadTopics(tx: Tx, locale: Locale): Promise<Topic[]> {
   const rows = await tx<TopicRow[]>`
-    select t.slug, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
+    select t.slug, t.kind, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
       case when l.summary is null then ${SRC} else ${locale} end as summary_locale,
       t.start_year, t.end_year, t.is_approximate,
       coalesce((select array_agg(e.slug order by te.sort_order)
@@ -174,6 +176,7 @@ async function loadTopics(tx: Tx, locale: Locale): Promise<Topic[]> {
     order by t.start_year, t.slug`;
   return rows.map((r): Topic => ({
     slug: r.slug,
+    kind: r.kind,
     name: r.name,
     summary: r.summary ?? "",
     summaryLocale: asLocale(r.summary_locale),
@@ -380,13 +383,13 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
     from public.event_translations t join public.sources s on s.id = t.source_id
     where t.event_id = ${ev.id} and t.locale = ${ev.text_locale}`;
   const topics = await tx<TopicLinkRow[]>`
-    select t.slug, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
+    select t.slug, t.kind, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
     from public.topic_events te
     join public.topics t on t.id = te.topic_id
     join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
     left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
     where te.event_id = ${ev.id} and t.status = 'published'
-    order by t.start_year`;
+    order by t.kind, t.start_year`;
   const people = await loadPersonCards(
     tx,
     locale,
@@ -541,6 +544,7 @@ const toSource = (r: SourceRow): TextSource => ({ url: r.url, title: r.title, li
 
 type TopicLinkRow = {
   slug: string;
+  kind: TopicKind;
   name: string;
   start_year: number;
   end_year: number | null;
@@ -548,6 +552,7 @@ type TopicLinkRow = {
 };
 const toTopicLink = (r: TopicLinkRow): TopicLink => ({
   slug: r.slug,
+  kind: r.kind,
   name: r.name,
   startYear: r.start_year,
   endYear: r.end_year,
@@ -675,13 +680,13 @@ async function loadPersonPage(tx: Tx, locale: Locale, slug: string): Promise<Per
     limit 40`;
 
   const topics = await tx<TopicLinkRow[]>`
-    select t.slug, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
+    select t.slug, t.kind, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
     from public.topic_people tp
     join public.topics t on t.id = tp.topic_id
     join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
     left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
     where tp.person_id = ${p.id} and t.status = 'published'
-    order by t.start_year`;
+    order by t.kind, t.start_year`;
 
   return {
     person: {
@@ -727,9 +732,13 @@ export async function getPersonPage(locale: Locale, slug: string): Promise<Perso
 // Topic page
 // ---------------------------------------------------------------------------
 
+/** Country, people group and religion pages list this many of their best-known events. */
+export const GROUP_EVENT_LIMIT = 200;
+const GROUP_PEOPLE_LIMIT = 48;
+
 async function loadTopicPage(tx: Tx, locale: Locale, slug: string): Promise<TopicPage | null> {
   const [t] = await tx<(TopicRow & { id: string; is_sensitive: boolean })[]>`
-    select t.id, t.slug, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
+    select t.id, t.slug, t.kind, coalesce(l.name, d.name) as name, coalesce(l.summary, d.summary) as summary,
       case when l.summary is null then ${SRC} else ${locale} end as summary_locale,
       t.start_year, t.end_year, t.is_approximate, t.is_sensitive,
       coalesce((select array_agg(e.slug order by te.sort_order)
@@ -741,37 +750,78 @@ async function loadTopicPage(tx: Tx, locale: Locale, slug: string): Promise<Topi
     left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
     where t.slug = ${slug} and t.status = 'published'`;
   if (!t) return null;
+  const isGroup = t.kind !== "topic";
 
   const [source] = await tx<SourceRow[]>`
     select s.url, s.title, s.license
     from public.topic_translations tt join public.sources s on s.id = tt.source_id
     where tt.topic_id = ${t.id} and tt.locale = ${t.summary_locale}`;
 
+  // Hand-picked topics show every event; the others their best known, still in time order.
   const events = await tx<
-    (LinkRow & { summary: string; place: string; importance: number; text_locale: string; has_full_story: boolean })[]
+    (LinkRow & {
+      summary: string;
+      place: string;
+      importance: number;
+      text_locale: string;
+      has_full_story: boolean;
+      wikidata_id: string | null;
+      via: string | null;
+    })[]
   >`
-    select e.slug, coalesce(l.title, d.title) as title, coalesce(l.summary, d.summary) as summary,
-      coalesce(l.place_label, d.place_label) as place, e.start_year, e.end_year, e.is_approximate, e.importance,
-      case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
-      exists (select 1 from public.stories s where s.event_id = e.id and s.layout = 'full') as has_full_story
-    from public.topic_events te
-    join public.events e on e.id = te.event_id
-    join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
-    left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
-    where te.topic_id = ${t.id} and e.status = 'published'
-    order by e.start_year, e.importance, e.slug`;
+    select * from (
+      select e.slug, coalesce(l.title, d.title) as title, coalesce(l.summary, d.summary) as summary,
+        coalesce(l.place_label, d.place_label) as place, e.start_year, e.end_year, e.is_approximate, e.importance,
+        case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
+        exists (select 1 from public.stories s where s.event_id = e.id and s.layout = 'full') as has_full_story,
+        e.wikidata_id, te.via
+      from public.topic_events te
+      join public.events e on e.id = te.event_id
+      join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
+      left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
+      where te.topic_id = ${t.id} and e.status = 'published'
+      order by e.importance, e.sitelinks desc nulls last, e.slug
+      limit ${isGroup ? GROUP_EVENT_LIMIT : 100_000}
+    ) x
+    order by x.start_year, x.importance, x.slug`;
+
+  const [{ events: eventTotal, people: peopleTotal }] = await tx<{ events: number; people: number }[]>`
+    select
+      (select count(*)::int from public.topic_events te join public.events e on e.id = te.event_id
+        where te.topic_id = ${t.id} and e.status = 'published') as events,
+      (select count(*)::int from public.topic_people tp join public.people p on p.id = tp.person_id
+        where tp.topic_id = ${t.id} and p.status = 'published') as people`;
 
   const people = await loadPersonCards(
     tx,
     locale,
     tx`p.id in (select tp.person_id from public.topic_people tp where tp.topic_id = ${t.id})`,
     tx`(select tp.sort_order from public.topic_people tp where tp.topic_id = ${t.id} and tp.person_id = p.id)`,
-    24,
+    isGroup ? GROUP_PEOPLE_LIMIT : 24,
   );
+  const peopleVia = new Map(
+    (
+      await tx<{ slug: string; wikidata_id: string | null; via: string | null }[]>`
+      select p.slug, p.wikidata_id, tp.via from public.topic_people tp join public.people p on p.id = tp.person_id
+      where tp.topic_id = ${t.id} and p.slug = any(${people.map((p) => p.slug)}::text[])`
+    ).map((r) => [r.slug, r]),
+  );
+  const memberSource = (r: { wikidata_id: string | null; via: string | null } | undefined) =>
+    r?.wikidata_id && r.via ? { wikidataId: r.wikidata_id, via: r.via } : null;
+
+  const related = (direction: "successors" | "predecessors") => tx<TopicLinkRow[]>`
+    select t.slug, t.kind, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
+    from public.topic_successors ts
+    join public.topics t on t.id = ${direction === "successors" ? tx`ts.successor_id` : tx`ts.topic_id`}
+    join public.topic_translations d on d.topic_id = t.id and d.locale = ${SRC}
+    left join public.topic_translations l on l.topic_id = t.id and l.locale = ${locale}
+    where ${direction === "successors" ? tx`ts.topic_id` : tx`ts.successor_id`} = ${t.id} and t.status = 'published'
+    order by t.start_year, name`;
 
   return {
     topic: {
       slug: t.slug,
+      kind: t.kind,
       name: t.name,
       summary: t.summary ?? "",
       summaryLocale: asLocale(t.summary_locale),
@@ -790,8 +840,13 @@ async function loadTopicPage(tx: Tx, locale: Locale, slug: string): Promise<Topi
       importance: asImportance(r.importance),
       textLocale: asLocale(r.text_locale),
       hasFullStory: r.has_full_story,
+      source: memberSource(r),
     })),
-    people,
+    eventTotal,
+    people: people.map((p) => ({ ...p, source: memberSource(peopleVia.get(p.slug)) })),
+    peopleTotal,
+    successors: (await related("successors")).map(toTopicLink),
+    predecessors: (await related("predecessors")).map(toTopicLink),
   };
 }
 
@@ -823,15 +878,15 @@ export async function getPublishedPeopleSlugs(): Promise<{ slug: string; updated
   );
 }
 
-export async function getPublishedTopicSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
+export async function getPublishedTopicSlugs(): Promise<{ slug: string; kind: TopicKind; updatedAt: string }[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(CACHE_TAGS.timeline);
-  return toSlugs(
-    await publicRead(
-      "topic.slugs",
-      (tx) =>
-        tx<SlugRow[]>`select slug, updated_at from public.topics where status = 'published' order by start_year, slug`,
-    ),
+  const rows = await publicRead(
+    "topic.slugs",
+    (tx) =>
+      tx<(SlugRow & { kind: TopicKind })[]>`
+      select slug, kind, updated_at from public.topics where status = 'published' order by start_year, slug`,
   );
+  return rows.map((r) => ({ slug: r.slug, kind: r.kind, updatedAt: r.updated_at.toISOString() }));
 }

@@ -105,9 +105,15 @@ export const TopicTextSchema = z.object({
   source: SourceSchema.nullable(),
 });
 
+export const TOPIC_KINDS = ["topic", "country", "former_country", "people", "religion"] as const;
+/** Which Wikidata statement links a member: "P17", or a chain such as "P276>P17". */
+const via = z.string().regex(/^P[1-9]\d*(>P[1-9]\d*)?$/);
+
 export const TopicSchema = z.object({
   slug,
   wikidataId: qid,
+  /** Hand-picked topic, or a country, former state, people group or religion (older bundles: topic). */
+  kind: z.enum(TOPIC_KINDS).default("topic"),
   isSensitive: z.boolean(),
   startYear: year,
   endYear: year.nullable(),
@@ -117,6 +123,10 @@ export const TopicSchema = z.object({
   events: z.array(qid),
   /** Wikidata ids of people, most covered first. */
   people: z.array(qid),
+  /** For members linked by a Wikidata statement: member id → the statement. */
+  via: z.record(qid, via).default({}),
+  /** Wikidata ids of the topics (countries) that replaced this one. */
+  successors: z.array(qid).default([]),
 });
 
 export const BundleSchema = z.object({

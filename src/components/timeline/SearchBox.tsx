@@ -53,6 +53,7 @@ function resultDetail(r: SearchResult, eras: Era[], locale: Locale): string {
 /** Search combobox (ARIA 1.2 pattern): type, arrow through results, Enter to go. */
 export function SearchBox({ locale, eras, currentYear, onChoose }: Props) {
   const t = getMessages(locale).search;
+  const kinds = getMessages(locale).topic.kinds;
   const id = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -145,7 +146,7 @@ export function SearchBox({ locale, eras, currentYear, onChoose }: Props) {
                 onClick={() => choose(r)}
               >
                 <span className="text-[10px] font-semibold tracking-[.07em] text-accent-strong uppercase">
-                  {t.types[r.type]}
+                  {r.type === "topic" && r.topic.kind !== "topic" ? kinds[r.topic.kind] : t.types[r.type]}
                 </span>
                 <span className="min-w-0 font-semibold" dir="auto">
                   {resultName(r, locale)}
