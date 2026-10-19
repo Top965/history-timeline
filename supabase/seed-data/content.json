@@ -126,7 +126,13 @@
           "mediaHint": "لوح طيني عليه كتابة مسمارية",
           "keywords": ["الكتابة", "المسمارية", "سومر", "السومريون", "أوروك", "العراق"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Cuneiform",
+          "url": "https://en.wikipedia.org/wiki/Cuneiform"
+        }
+      ]
     },
     {
       "slug": "upper-and-lower-egypt-unite",
@@ -150,7 +156,13 @@
           "mediaHint": "لوحة نارمر",
           "keywords": ["نارمر", "مينا", "توحيد", "مصر", "الفراعنة"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Narmer",
+          "url": "https://en.wikipedia.org/wiki/Narmer"
+        }
+      ]
     },
     {
       "slug": "great-pyramid-of-giza",
@@ -210,19 +222,25 @@
       "translations": {
         "en": {
           "title": "Tutankhamun becomes pharaoh",
-          "summary": "The boy king rules for about ten years. His nearly intact tomb, found in 1922, makes him the best-known pharaoh today.",
+          "summary": "The boy king, about eight or nine years old, rules for about nine years. His tomb, found nearly intact in 1922, makes him one of the best-known pharaohs.",
           "placeLabel": "Egypt",
           "mediaHint": "Tutankhamun’s golden mask",
           "keywords": []
         },
         "ar": {
           "title": "توت عنخ آمون يصبح فرعونًا",
-          "summary": "يحكم الملك الصبي نحو عشر سنوات. مقبرته التي عُثر عليها شبه سليمة عام 1922 جعلته أشهر الفراعنة اليوم.",
+          "summary": "يتولى الملك الصبي الحكم في نحو الثامنة أو التاسعة من عمره ويحكم نحو تسع سنوات. مقبرته التي عُثر عليها شبه سليمة عام 1922 جعلته من أشهر الفراعنة.",
           "placeLabel": "مصر",
           "mediaHint": "القناع الذهبي لتوت عنخ آمون",
           "keywords": ["توت", "عنخ", "آمون", "فرعون", "مقبرة"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Tutankhamun",
+          "url": "https://en.wikipedia.org/wiki/Tutankhamun"
+        }
+      ]
     },
     {
       "slug": "first-recorded-olympic-games",
@@ -486,7 +504,17 @@
           "mediaHint": "سهوب منغوليا",
           "keywords": ["جنكيز", "خان", "المغول", "منغوليا"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Genghis Khan",
+          "url": "https://en.wikipedia.org/wiki/Genghis_Khan"
+        },
+        {
+          "title": "Mongol Empire",
+          "url": "https://en.wikipedia.org/wiki/Mongol_Empire"
+        }
+      ]
     },
     {
       "slug": "mongols-sack-baghdad",
@@ -558,7 +586,13 @@
           "mediaHint": "صفحة من إنجيل غوتنبرغ",
           "keywords": ["الطباعة", "المطبعة", "غوتنبرغ", "الكتب"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Printing press",
+          "url": "https://en.wikipedia.org/wiki/Printing_press"
+        }
+      ]
     },
     {
       "slug": "fall-of-constantinople",
@@ -702,7 +736,13 @@
           "mediaHint": "سفن تقليدية في ميناء مدينة الكويت القديم",
           "keywords": ["الكويت", "الصباح", "صباح", "الخليج"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "History of Kuwait",
+          "url": "https://en.wikipedia.org/wiki/History_of_Kuwait"
+        }
+      ]
     },
     {
       "slug": "industrial-revolution",
@@ -822,7 +862,13 @@
           "mediaHint": "سفن في افتتاح القناة، 1869",
           "keywords": ["قناة", "السويس", "مصر"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Suez Canal",
+          "url": "https://en.wikipedia.org/wiki/Suez_Canal"
+        }
+      ]
     },
     {
       "slug": "anglo-kuwaiti-agreement",
@@ -870,7 +916,13 @@
           "mediaHint": "طائرة الأخوين رايت، 17 ديسمبر 1903",
           "keywords": ["الطيران", "الطائرة", "رايت"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Wright Flyer",
+          "url": "https://en.wikipedia.org/wiki/Wright_Flyer"
+        }
+      ]
     },
     {
       "slug": "world-war-i",
@@ -1002,19 +1054,25 @@
       "translations": {
         "en": {
           "title": "Oil discovered in Kuwait",
-          "summary": "Drillers strike oil at Burgan, one of the largest oil fields in the world. Exports begin in 1946.",
+          "summary": "Drillers strike oil at Burgan, part of one of the largest oil fields in the world. Commercial production begins in 1946.",
           "placeLabel": "Burgan field, Kuwait",
           "mediaHint": "The Burgan No. 1 well",
           "keywords": ["oil", "petroleum", "burgan", "gulf"]
         },
         "ar": {
           "title": "اكتشاف النفط في الكويت",
-          "summary": "يتدفق النفط في حقل برقان، أحد أكبر حقول النفط في العالم. ويبدأ التصدير عام 1946.",
+          "summary": "يتدفق النفط في حقل برقان، وهو جزء من أحد أكبر حقول النفط في العالم. ويبدأ الإنتاج التجاري عام 1946.",
           "placeLabel": "حقل برقان، الكويت",
           "mediaHint": "بئر برقان رقم 1",
           "keywords": ["النفط", "البترول", "برقان", "الكويت", "الخليج"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Burgan field",
+          "url": "https://en.wikipedia.org/wiki/Burgan_field"
+        }
+      ]
     },
     {
       "slug": "world-war-ii",
@@ -1108,19 +1166,29 @@
       "translations": {
         "en": {
           "title": "Kuwait’s independence",
-          "summary": "On 19 June 1961 Kuwait ends the 1899 agreement with Britain and becomes fully independent.",
+          "summary": "On 19 June 1961 the British protectorate over Kuwait, which began with the 1899 agreement, ends and Kuwait becomes fully independent.",
           "placeLabel": "Kuwait",
           "mediaHint": "The flag of Kuwait",
           "keywords": ["independence", "gulf"]
         },
         "ar": {
           "title": "استقلال الكويت",
-          "summary": "في 19 يونيو 1961 تُنهي الكويت اتفاقية 1899 مع بريطانيا وتصبح دولة مستقلة استقلالًا تامًا.",
+          "summary": "في 19 يونيو 1961 تنتهي الحماية البريطانية على الكويت، التي بدأت باتفاقية 1899، وتصبح الكويت دولة مستقلة استقلالًا تامًا.",
           "placeLabel": "الكويت",
           "mediaHint": "علم الكويت",
           "keywords": ["الكويت", "الاستقلال", "الخليج"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Kuwait",
+          "url": "https://en.wikipedia.org/wiki/Kuwait"
+        },
+        {
+          "title": "History of Kuwait",
+          "url": "https://en.wikipedia.org/wiki/History_of_Kuwait"
+        }
+      ]
     },
     {
       "slug": "six-day-war",
@@ -1196,7 +1264,13 @@
           "mediaHint": "أثر حذاء على تربة القمر",
           "keywords": ["أبولو", "القمر", "الفضاء", "ناسا", "آرمسترونغ"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "Apollo 11",
+          "url": "https://en.wikipedia.org/wiki/Apollo_11"
+        }
+      ]
     },
     {
       "slug": "brazil-wins-a-third-world-cup",
@@ -1423,7 +1497,13 @@
           "mediaHint": "أول خادم ويب في سيرن",
           "keywords": ["الإنترنت", "الويب", "الشبكة", "العنكبوتية"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "World Wide Web",
+          "url": "https://en.wikipedia.org/wiki/World_Wide_Web"
+        }
+      ]
     },
     {
       "slug": "oslo-accords",
@@ -1577,7 +1657,13 @@
           "mediaHint": "هاتف ذكي قديم يعمل باللمس",
           "keywords": ["الهاتف", "الذكي", "آيفون", "أبل", "الجوال"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "IPhone (1st generation)",
+          "url": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)"
+        }
+      ]
     },
     {
       "slug": "first-world-cup-in-africa",
@@ -1637,19 +1723,25 @@
       "translations": {
         "en": {
           "title": "Generative AI goes mainstream",
-          "summary": "Chatbots and image tools built on large AI models reach hundreds of millions of people within months.",
+          "summary": "ChatGPT, a chatbot built on large language models, reaches 100 million users within two months of its launch in November 2022.",
           "placeLabel": "Worldwide",
           "mediaHint": "Data center server racks",
           "keywords": ["ai", "artificial", "intelligence", "chatgpt"]
         },
         "ar": {
           "title": "الذكاء الاصطناعي التوليدي يصل إلى الجميع",
-          "summary": "تصل برامج المحادثة وأدوات الصور القائمة على نماذج الذكاء الاصطناعي الكبيرة إلى مئات الملايين من الناس خلال أشهر.",
+          "summary": "يصل ChatGPT، وهو برنامج محادثة قائم على نماذج لغوية كبيرة، إلى 100 مليون مستخدم خلال شهرين من إطلاقه في نوفمبر 2022.",
           "placeLabel": "العالم كله",
           "mediaHint": "خوادم في مركز بيانات",
           "keywords": ["الذكاء", "الاصطناعي", "شات", "جي", "بي", "تي"]
         }
-      }
+      },
+      "sources": [
+        {
+          "title": "ChatGPT",
+          "url": "https://en.wikipedia.org/wiki/ChatGPT"
+        }
+      ]
     },
     {
       "slug": "qatar-world-cup",

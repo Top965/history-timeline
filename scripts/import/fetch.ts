@@ -11,6 +11,7 @@ import {
   buildPerson,
   buildTopic,
   dedupeSlugs,
+  disambiguateTitles,
   entitySpan,
   isHuman,
   lifeReferences,
@@ -388,10 +389,12 @@ export async function fetchBundle(http: Http, limits: FetchLimits = DEFAULT_LIMI
     };
   const ctx: BuildContext = { labels, leads, images, spans, sitelinks, seeds, currentYear, siteEvents: new Set() };
   const builtEvents = dedupeSlugs(
-    events
-      .map((e) => buildEvent(e, ctx))
-      .filter((x): x is ImportEvent => !!x)
-      .filter(valid("event", EventSchema)),
+    disambiguateTitles(
+      events
+        .map((e) => buildEvent(e, ctx))
+        .filter((x): x is ImportEvent => !!x)
+        .filter(valid("event", EventSchema)),
+    ),
     (r) => r.startYear,
     new Set(),
     (r) => r.seedSlug != null,

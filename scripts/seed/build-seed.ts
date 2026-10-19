@@ -57,6 +57,15 @@ export function buildSeedSql(data: SeedData): string {
           `  on conflict (event_id, locale) do update set title = excluded.title, summary = excluded.summary, place_label = excluded.place_label, media_hint = excluded.media_hint, keywords = excluded.keywords;`,
       );
     }
+    for (const src of e.sources) {
+      // Sources have no revision here, and (url, null) never conflicts, so look before inserting.
+      emit(
+        `insert into public.sources (kind, url, title, locale, license, retrieved_at) select 'wikipedia', ${q(src.url)}, ${q(src.title)}, 'en', 'CC BY-SA 4.0', now()\n` +
+          `  where not exists (select 1 from public.sources where url = ${q(src.url)} and revision_id is null);\n` +
+          `insert into public.event_sources (event_id, source_id) select ${eventId(e.slug)}, id from public.sources where url = ${q(src.url)} and revision_id is null\n` +
+          `  on conflict do nothing;`,
+      );
+    }
   }
   emit("");
 

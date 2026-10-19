@@ -185,6 +185,17 @@ async function loadInTransaction(tx: postgres.TransactionSql, bundle: Bundle): P
       keywords = excluded.keywords, origin = excluded.origin, source_id = excluded.source_id
       where public.event_translations.origin <> 'manual'`;
 
+  // Text from an earlier run that this run no longer gives (an Arabic summary that turned
+  // out to say nothing) is removed, so the page falls back to English and says so.
+  const imports = bundle.events.flatMap((e) => {
+    const id = eventIds.get(e.wikidataId);
+    return id ? [{ eventId: id, locales: (["en", "ar"] as const).filter((l) => e.text[l]) }] : [];
+  });
+  await tx`
+    delete from public.event_translations t
+    using jsonb_to_recordset(${json(tx, imports)}::jsonb) as r("eventId" uuid, locales jsonb)
+    where t.event_id = r."eventId" and t.origin = 'wikipedia' and not r.locales ? t.locale::text`;
+
   const heroes = bundle.events.flatMap((e) => {
     const ev = eventIds.get(e.wikidataId);
     const img = e.image ? imageId.get(e.image) : undefined;

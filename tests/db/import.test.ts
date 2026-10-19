@@ -48,7 +48,7 @@ function testBundle(): Bundle {
       en: new Map([
         ["Saddam Hussein", lead("Saddam Hussein", "Saddam Hussein was an Iraqi politician.")],
         ["First Intifada", lead("First Intifada", "Imported text that must not replace the hand-written one.")],
-        ["Test summit", lead("Test summit", "A summit invented for this test.")],
+        ["Test summit", lead("Test summit", "A summit invented for this test, held in 1990.")],
         ["Israeli–Palestinian conflict", lead("Israeli–Palestinian conflict", "Imported topic text.")],
       ]),
       ar: new Map(),
@@ -76,7 +76,7 @@ function testBundle(): Bundle {
   const summit: Entity = {
     id: NEW_EVENT,
     labels: { en: { value: "Test summit" }, ar: { value: "قمة الاختبار" } },
-    descriptions: { ar: { value: "قمة للاختبار" } },
+    descriptions: { ar: { value: "قمة للاختبار عُقدت عام 1990 لأغراض هذا الاختبار فقط" } },
     sitelinks: { enwiki: { title: "Test summit" } },
     claims: { P585: [claim("P585", time("+1990-08-02T00:00:00Z"))] },
   };
@@ -201,5 +201,21 @@ describe.skipIf(!url)("importer load", () => {
     await loadBundle(sql!, testBundle());
     const [b] = await count();
     expect(b).toEqual(a);
+  });
+
+  it("removes imported text a later run no longer gives, and keeps hand-written text", async () => {
+    const bundle = testBundle();
+    for (const e of bundle.events) e.text.ar = null;
+    await loadBundle(sql!, bundle);
+    const rows = await sql!`
+      select e.slug, t.locale from event_translations t join events e on e.id = t.event_id
+      where e.slug in ('test-summit', 'first-intifada') order by 1, 2`;
+    expect(rows).toEqual([
+      { slug: "first-intifada", locale: "ar" },
+      { slug: "first-intifada", locale: "en" },
+      { slug: "test-summit", locale: "en" },
+    ]);
+    const ar = (await queries.getEventPage("ar", "test-summit"))!;
+    expect(ar.event).toMatchObject({ title: "Test summit", textLocale: "en" });
   });
 });

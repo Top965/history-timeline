@@ -382,6 +382,11 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
     select s.url, s.title, s.license
     from public.event_translations t join public.sources s on s.id = t.source_id
     where t.event_id = ${ev.id} and t.locale = ${ev.text_locale}`;
+  const sources = await tx<SourceRow[]>`
+    select s.url, s.title, s.license
+    from public.event_sources es join public.sources s on s.id = es.source_id
+    where es.event_id = ${ev.id} and s.url is not null
+    order by s.title`;
   const topics = await tx<TopicLinkRow[]>`
     select t.slug, t.kind, coalesce(l.name, d.name) as name, t.start_year, t.end_year, t.is_approximate
     from public.topic_events te
@@ -417,6 +422,7 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
     hero: hero ? toImage(hero, ev.media_hint ?? ev.title) : null,
     story,
     source: source ? toSource(source) : null,
+    sources: source ? [] : sources.map(toSource),
     topics: topics.map(toTopicLink),
     people,
     previous: previous ? toLink(previous) : null,

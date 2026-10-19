@@ -128,7 +128,7 @@ export type Messages = {
     successors: string;
     predecessors: string;
   };
-  credit: { fromWikipedia: string; license: string };
+  credit: { fromWikipedia: string; license: string; sources: string };
   related: { people: string; topics: string };
   theme: { label: string; system: string; light: string; dark: string };
   language: { label: string };
@@ -312,7 +312,7 @@ const en: Messages = {
     successors: "Countries on this land today",
     predecessors: "Earlier states here",
   },
-  credit: { fromWikipedia: "Text from the Wikipedia article", license: "CC BY-SA 4.0" },
+  credit: { fromWikipedia: "Text from the Wikipedia article", license: "CC BY-SA 4.0", sources: "Sources:" },
   related: { people: "People", topics: "Topics" },
   theme: { label: "Theme", system: "Auto", light: "Light", dark: "Dark" },
   language: { label: "Language" },
@@ -503,7 +503,7 @@ const ar: Messages = {
     successors: "الدول القائمة على هذه الأرض اليوم",
     predecessors: "دول سابقة هنا",
   },
-  credit: { fromWikipedia: "النص من مقالة ويكيبيديا", license: "CC BY-SA 4.0" },
+  credit: { fromWikipedia: "النص من مقالة ويكيبيديا", license: "CC BY-SA 4.0", sources: "المصادر:" },
   related: { people: "شخصيات", topics: "مواضيع" },
   theme: { label: "المظهر", system: "تلقائي", light: "فاتح", dark: "داكن" },
   language: { label: "اللغة" },

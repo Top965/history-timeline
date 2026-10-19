@@ -47,6 +47,15 @@ export const seedSchema = z
           .regex(/^Q[1-9]\d*$/)
           .optional(),
         translations: z.object({ en: eventTranslation }).catchall(eventTranslation),
+        /** English Wikipedia articles that back the text above. */
+        sources: z
+          .array(
+            z.object({
+              title: z.string().min(1),
+              url: z.string().regex(/^https:\/\/en\.wikipedia\.org\/wiki\/\S+$/),
+            }),
+          )
+          .default([]),
       }),
     ),
     topics: z.array(

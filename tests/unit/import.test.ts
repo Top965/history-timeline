@@ -7,6 +7,7 @@ import {
   buildTopic,
   cleanTitle,
   dedupeSlugs,
+  disambiguateTitles,
   importanceFor,
   slugify,
   type BuildContext,
@@ -14,7 +15,7 @@ import {
 import { commonsTitle } from "../../scripts/import/commons";
 import { BundleSchema, PersonSchema } from "../../scripts/import/model";
 import { parseTime, type Entity } from "../../scripts/import/wikidata";
-import { summarize, trimLead, type Lead } from "../../scripts/import/wikipedia";
+import { leadParagraph, summarize, trimLead, type Lead } from "../../scripts/import/wikipedia";
 
 /** Saddam Hussein (Q1316) and Lionel Messi (Q615) as Wikidata returned them, trimmed to the statements we read. */
 const people = JSON.parse(
@@ -290,6 +291,54 @@ describe("events", () => {
       "siege-of-baghdad",
       "siege-of-baghdad-1917",
     ]);
+  });
+
+  it("skips lines that are not the article's opening", () => {
+    const opening = "The Treaty of Saint Petersburg was signed in 1875 between Japan and Russia.";
+    expect(leadParagraph(`（including de facto control）\n${opening}`)).toBe(opening);
+    expect(leadParagraph(`=\nلكوارث مشابهة، انظر حريق موسكو\nمقالة ويكي أخبار\n${opening}`)).toBe(opening);
+    expect(leadParagraph("For other uses, see Great Retreat (disambiguation).\n" + opening)).toBe(opening);
+    expect(leadParagraph("Too short.")).toBeNull();
+    expect(summarize(`m:Wikipedia 15\n${opening}`)).toBe(opening);
+  });
+
+  it("leaves out summaries that say nothing, and Wikipedia's own pages", () => {
+    const withAr = (extract: string, desc?: string) =>
+      buildEvent(event(desc ? { descriptions: { ...event().descriptions, ar: { value: desc } } } : {}), {
+        ...ctx,
+        leads: {
+          ...ctx.leads,
+          ar: new Map([["الانتفاضة الفلسطينية الأولى", lead("ar", "الانتفاضة الفلسطينية الأولى", extract)]]),
+        },
+      })!;
+    // A lone "=" and a one-word description give no Arabic text, so the page shows the English.
+    expect(withAr("=", "انتفاضة.").text.ar).toBeNull();
+    const real = "الانتفاضة الفلسطينية الأولى هي انتفاضة شعبية فلسطينية بدأت في ديسمبر 1987.";
+    expect(withAr(`=\n${real}`).text.ar?.summary).toBe(real);
+
+    const wiki = event({ sitelinks: { enwiki: { title: "Wikipedia:20th anniversary" } } });
+    expect(buildEvent(wiki, ctx)).toBeNull();
+  });
+
+  it("keeps the full title when two events share a short one and a year", () => {
+    const built = (id: string, full: string) => {
+      const e = buildEvent(event({ id, sitelinks: { enwiki: { title: full } } }), {
+        ...ctx,
+        leads: {
+          en: new Map([[full, lead("en", full, "The Great Retreat was a long withdrawal in 1915 by an army.")]]),
+          ar: new Map(),
+        },
+      })!;
+      return e;
+    };
+    const russian = built("Q1", "Great Retreat (Russian)");
+    const serbian = built("Q2", "Great Retreat (Serbian)");
+    expect([russian, serbian].map((e) => e.text.en.title)).toEqual(["Great Retreat", "Great Retreat"]);
+    expect(disambiguateTitles([russian, serbian]).map((e) => e.text.en.title)).toEqual([
+      "Great Retreat (Russian)",
+      "Great Retreat (Serbian)",
+    ]);
+    expect(disambiguateTitles([russian])[0].text.en.title).toBe("Great Retreat");
   });
 });
 
