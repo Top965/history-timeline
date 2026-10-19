@@ -316,6 +316,39 @@ test.describe("Arabic and themes", () => {
     await expect(page).toHaveURL(/\/ar\/events\/world-war-i$/);
   });
 
+  test("shares a page through the phone's share menu, or copies its link", async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { shared: unknown[] }).shared = [];
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (data: unknown) => {
+          (window as unknown as { shared: unknown[] }).shared.push(data);
+        },
+      });
+    });
+    await page.goto("/en/events/world-war-i#chapter-2");
+    await page.getByRole("button", { name: "Share" }).click();
+    const shared = await page.evaluate(
+      () => (window as unknown as { shared: { url: string; title: string }[] }).shared,
+    );
+    expect(shared).toHaveLength(1);
+    expect(shared[0].url).toMatch(/\/en\/events\/world-war-i$/);
+    expect(shared[0].title).toContain("World War I");
+
+    // Without a share menu (most desktop browsers) the link is copied.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async (t: string) => ((window as unknown as { copied: string }).copied = t) },
+      });
+    });
+    await page.goto("/ar");
+    await page.getByRole("button", { name: "مشاركة" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "نُسخ الرابط" })).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { copied: string }).copied)).toMatch(/\/ar$/);
+  });
+
   test("remembers the chosen theme", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/en");

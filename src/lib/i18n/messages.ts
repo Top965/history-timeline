@@ -132,6 +132,7 @@ export type Messages = {
   related: { people: string; topics: string };
   theme: { label: string; system: string; light: string; dark: string };
   language: { label: string };
+  share: { label: string; copied: string; failed: string };
   footer: { credits: string };
   notFound: { title: string; body: string; home: string };
   error: { title: string; body: string; retry: string };
@@ -315,6 +316,7 @@ const en: Messages = {
   related: { people: "People", topics: "Topics" },
   theme: { label: "Theme", system: "Auto", light: "Light", dark: "Dark" },
   language: { label: "Language" },
+  share: { label: "Share", copied: "Link copied", failed: "Couldn’t share this page" },
   footer: {
     credits:
       "Event data from Wikidata (CC0). Story text adapted from Wikipedia (CC BY-SA 4.0). Images from Wikimedia Commons, credited on each image.",
@@ -505,6 +507,7 @@ const ar: Messages = {
   related: { people: "شخصيات", topics: "مواضيع" },
   theme: { label: "المظهر", system: "تلقائي", light: "فاتح", dark: "داكن" },
   language: { label: "اللغة" },
+  share: { label: "مشاركة", copied: "نُسخ الرابط", failed: "تعذّرت مشاركة هذه الصفحة" },
   footer: {
     credits:
       "بيانات الأحداث من ويكي بيانات (CC0). نصوص القصص مقتبسة من ويكيبيديا (CC BY-SA 4.0). الصور من ويكيميديا كومنز مع ذكر صاحب كل صورة.",
