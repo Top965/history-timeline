@@ -2,6 +2,8 @@
 
 Explore all of history on one zoomable timeline: drag through time, zoom from eras to single years, and read the full story of any event. English and Arabic.
 
+Live at **[www.explorehistorytimeline.com](https://www.explorehistorytimeline.com)** (`explorehistorytimeline.com` redirects there).
+
 Stack: Next.js 16 (App Router, TypeScript, Cache Components), Tailwind CSS 4, Supabase Postgres, Vercel.
 
 ## What is in step 1
@@ -47,8 +49,8 @@ CI (`.github/workflows/ci.yml`) runs all of these on every pull request with a f
 3. **Create the Vercel project.** In [Vercel](https://vercel.com/new), import `Top965/history-timeline`. Framework: Next.js (detected).
 4. **Add environment variables** in Vercel (Project Settings > Environment Variables), for Production and Preview:
    - `DATABASE_URL` = the string from step 2
-   - `NEXT_PUBLIC_SITE_URL` = your site address, e.g. `https://historytimeline.app` (optional until you have a domain)
-5. **Deploy.** Pages are built ahead of time from the database and refreshed hourly. Check `https://<your-site>/api/health` returns `{"status":"ok"}`.
+   - `NEXT_PUBLIC_SITE_URL` = your site address, e.g. `https://www.explorehistorytimeline.com` (optional: without it the site uses Vercel's production address)
+5. **Deploy.** Pages are built ahead of time from the database and refreshed hourly. Check `https://www.explorehistorytimeline.com/api/health` returns `{"status":"ok"}`.
 
 The site only ever reads, inside read-only transactions as Supabase's `anon` role, so Row Level Security decides what is public.
 
