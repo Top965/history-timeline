@@ -217,6 +217,43 @@ test.describe("timeline", () => {
     await expect(page.getByTestId("article-sections")).toContainText("الأصل");
   });
 
+  test("opens the full Wikipedia article on an event page", async ({ page }) => {
+    await page.route("https://www.wikidata.org/**", (route) =>
+      route.fulfill({
+        json: {
+          entities: {
+            Q37200: {
+              id: "Q37200",
+              labels: { en: { value: "Great Pyramid of Giza" } },
+              claims: {},
+              sitelinks: { enwiki: { title: "Great Pyramid of Giza" } },
+            },
+          },
+        },
+      }),
+    );
+    await page.route("https://en.wikipedia.org/**", (route) =>
+      route.fulfill({
+        json: {
+          query: {
+            pages: [
+              {
+                extract:
+                  "The Great Pyramid of Giza is the largest Egyptian pyramid.\n\nIt was built for Khufu.\n\n\n== Construction ==\nWorkers quarried limestone.\n",
+              },
+            ],
+          },
+        },
+      }),
+    );
+    await page.goto("/en/events/great-pyramid-of-giza");
+    const article = page.getByTestId("article-sections");
+    await expect(article).toContainText("Introduction");
+    await expect(article).toContainText("Construction");
+    await article.getByText("Introduction").click();
+    await expect(article.getByText("It was built for Khufu.")).toBeVisible();
+  });
+
   test("has no serious accessibility problems", async ({ page }) => {
     await page.goto("/en");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

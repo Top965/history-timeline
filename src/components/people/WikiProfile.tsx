@@ -154,12 +154,27 @@ export function CareerAndHonours({
   );
 }
 
-/** The rest of the Wikipedia article as sections the reader opens one at a time. */
-export function ArticleSections({ wikidataId, locale }: { wikidataId: string; locale: Locale }) {
+/**
+ * The rest of the Wikipedia article as sections the reader opens one at a time.
+ * With `withLead`, the article's opening comes first as its own section, for pages
+ * that only show a one-paragraph summary of it.
+ */
+export function ArticleSections({
+  wikidataId,
+  locale,
+  withLead = false,
+}: {
+  wikidataId: string;
+  locale: Locale;
+  withLead?: boolean;
+}) {
   const t = getMessages(locale).person.profile;
   const state = useWikiProfile(wikidataId, locale);
-  if (state.kind !== "ready" || !state.profile.article || !state.profile.sections.length) return null;
-  const { sections, article } = state.profile;
+  if (state.kind !== "ready" || !state.profile.article) return null;
+  const { article, lead } = state.profile;
+  const sections =
+    withLead && lead ? [{ title: t.intro, body: lead }, ...state.profile.sections] : state.profile.sections;
+  if (!sections.length) return null;
   return (
     <section aria-labelledby="article-heading" className="grid gap-2" data-testid="article-sections">
       <h2 id="article-heading" className={H2}>

@@ -219,6 +219,8 @@ export type EventPage = {
     importance: 1 | 2 | 3;
     mediaHint: string | null;
     textLocale: Locale;
+    /** Its Wikidata entry, from which the browser loads the full Wikipedia article. */
+    wikidataId: string | null;
   };
   era: { slug: string; name: string } | null;
   hero: CommonsImage | null;
