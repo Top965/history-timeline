@@ -19,7 +19,7 @@ import {
   type Entity,
   type WdDate,
 } from "./wikidata";
-import { summarize, trimLead, type Lead } from "./wikipedia";
+import { leadParagraph, MIN_SUMMARY, summarize, trimLead, type Lead } from "./wikipedia";
 
 export type Labels = Map<string, { en: string | null; ar: string | null }>;
 export type Span = { start: WdDate; end: WdDate | null };
@@ -135,23 +135,51 @@ function placeOf(e: Entity, ctx: BuildContext, lang: "en" | "ar"): string | null
 // Events
 // ---------------------------------------------------------------------------
 
+/** Wikipedia's own pages ("Wikipedia:20th anniversary") and other non-article pages. */
+const NOT_AN_ARTICLE = /^(Wikipedia|Portal|Template|Category|Help|Draft|Module|File|Special|Project):/i;
+
+/**
+ * An event's summary: the opening of its article, else the Wikidata description,
+ * but only when either says something (at least MIN_SUMMARY characters).
+ */
+function eventSummary(lead: Lead | undefined, desc: string | null, lang: "en" | "ar"): string | null {
+  const opening = lead && leadParagraph(lead.extract) ? summarize(lead.extract) : null;
+  if (opening) return opening;
+  const fallback = desc ? sentence(lang === "en" ? capitalize(desc) : desc) : null;
+  return fallback && fallback.length >= MIN_SUMMARY ? fallback : null;
+}
+
+/**
+ * Different events can share a short title and year (the Serbian and the Russian
+ * "Great Retreat" of 1915). Those keep their full Wikipedia title, such as
+ * "Great Retreat (Russian)", so the timeline and search can tell them apart.
+ */
+export function disambiguateTitles(events: ImportEvent[]): ImportEvent[] {
+  const key = (e: ImportEvent) => `${e.text.en.title.toLowerCase()}|${e.startYear}`;
+  const count = new Map<string, number>();
+  for (const e of events) count.set(key(e), (count.get(key(e)) ?? 0) + 1);
+  return events.map((e) => {
+    const full = e.text.en.source?.title;
+    if ((count.get(key(e)) ?? 0) < 2 || !full || full === e.text.en.title) return e;
+    return { ...e, text: { ...e.text, en: { ...e.text.en, title: full.slice(0, 200) } } };
+  });
+}
+
 /** One timeline event, or null when it has no date or no English Wikipedia article. */
 export function buildEvent(e: Entity, ctx: BuildContext): ImportEvent | null {
   const span = entitySpan(e);
   const title = enTitle(e);
   if (!span || !title || span.start.year > ctx.currentYear + 1) return null;
+  if (NOT_AN_ARTICLE.test(title)) return null;
   const enLead = ctx.leads.en.get(title);
-  const enSummary = enLead
-    ? summarize(enLead.extract)
-    : description(e, "en")
-      ? sentence(capitalize(description(e, "en")!))
-      : null;
+  const enSummary = eventSummary(enLead, description(e, "en"), "en");
   if (!enSummary) return null;
 
   const ar = arTitle(e);
   const arLead = ar ? ctx.leads.ar.get(ar) : undefined;
   const arName = ar ? cleanTitle(ar) : label(e, "ar");
-  const arSummary = arLead ? summarize(arLead.extract) : description(e, "ar") ? sentence(description(e, "ar")!) : null;
+  // No Arabic text beats a word or two: the page then shows the English and says so.
+  const arSummary = eventSummary(arLead, description(e, "ar"), "ar");
 
   const sitelinks = ctx.sitelinks.get(e.id) ?? 0;
   const coords = coordinates(e);

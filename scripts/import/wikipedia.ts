@@ -85,12 +85,38 @@ export function cleanExtract(text: string): string {
     .trim();
 }
 
+/** Shorter than this, a summary says nothing ("Battle.", "معركة 1658."). */
+export const MIN_SUMMARY = 40;
+
+/**
+ * Lines plain-text extraction keeps that are not the article: a lone "=", a map
+ * caption, "For similar disasters, see …", a box pointing to Wikinews.
+ */
+const NOT_LEAD = [
+  /^[\p{P}\p{S}\s]*$/u,
+  /^[（(]/,
+  /^m:/,
+  /^(for |see also|not to be confused|this article )/i,
+  /^[^.،]{0,60}، انظر/,
+  /ويكي أخبار/,
+];
+
+/** The first paragraph that reads as the article's opening, or null when none does. */
+export function leadParagraph(text: string): string | null {
+  return (
+    text
+      .split(/\n+/)
+      .map((p) => p.trim())
+      .find((p) => p.length >= MIN_SUMMARY && !NOT_LEAD.some((re) => re.test(p))) ?? null
+  );
+}
+
 /**
  * The first `maxChars` of a lead, cut at a sentence end. Works for English and
  * Arabic punctuation. Used for the short summaries on cards and the timeline.
  */
 export function summarize(text: string, maxChars = 420): string {
-  const firstPara = text.split(/\n+/)[0].trim();
+  const firstPara = leadParagraph(text) ?? text.split(/\n+/)[0].trim();
   if (firstPara.length <= maxChars) return firstPara;
   const cut = firstPara.slice(0, maxChars);
   const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("۔ "), cut.lastIndexOf("؟ "), cut.lastIndexOf("! "));

@@ -272,6 +272,15 @@ describe.skipIf(!url)("database", () => {
       expect(await queries.getEventPage("en", "does-not-exist")).toBeNull();
     });
 
+    it("lists the articles behind a hand-written summary", async () => {
+      const page = (await queries.getEventPage("en", "kuwaits-independence"))!;
+      expect(page.source).toBeNull();
+      expect(page.sources.map((s) => s.url)).toEqual([
+        "https://en.wikipedia.org/wiki/History_of_Kuwait",
+        "https://en.wikipedia.org/wiki/Kuwait",
+      ]);
+    });
+
     it("returns a hero image with its credit", async () => {
       const [image] = await sql!`
         insert into images (commons_file, file_page_url, original_url, width, height, mime_type,

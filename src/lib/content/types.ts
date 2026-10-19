@@ -224,6 +224,8 @@ export type EventPage = {
   hero: CommonsImage | null;
   /** Wikipedia article the summary is drawn from (imported events only). */
   source: TextSource | null;
+  /** Articles that back a hand-written summary. */
+  sources: TextSource[];
   topics: TopicLink[];
   people: PersonCard[];
   story: Story | null;

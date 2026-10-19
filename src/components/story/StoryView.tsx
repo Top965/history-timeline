@@ -5,7 +5,7 @@ import { formatDate, formatDateRange, formatEventYears, formatRange } from "@/li
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { PersonChip } from "@/components/people/PersonChip";
-import { WikipediaCredit } from "@/components/ui/WikipediaCredit";
+import { SourceList, WikipediaCredit } from "@/components/ui/WikipediaCredit";
 import { CommonsFigure } from "./CommonsFigure";
 import { ShowOnTimeline } from "./ShowOnTimeline";
 
@@ -106,7 +106,10 @@ function ShortStory({ locale, page, eraLabel }: { locale: Locale; page: EventPag
       {page.source ? (
         <WikipediaCredit locale={locale} source={page.source} />
       ) : (
-        <p className="note">{t.story.shortNote}</p>
+        <>
+          <SourceList locale={locale} sources={page.sources} />
+          <p className="note">{t.story.shortNote}</p>
+        </>
       )}
     </>
   );

@@ -28,3 +28,22 @@ export function WikipediaCredit({ locale, source }: { locale: Locale; source: Te
     </p>
   );
 }
+
+/** The Wikipedia articles a hand-written text was checked against. */
+export function SourceList({ locale, sources }: { locale: Locale; sources: TextSource[] }) {
+  if (!sources.length) return null;
+  const t = getMessages(locale).credit;
+  return (
+    <p className="note m-0">
+      {t.sources}{" "}
+      {sources.map((s, i) => (
+        <span key={s.url}>
+          {i > 0 && (locale === "ar" ? "، " : ", ")}
+          <a href={s.url} rel="noopener noreferrer" className="underline decoration-line underline-offset-2" dir="auto">
+            {s.title}
+          </a>
+        </span>
+      ))}
+    </p>
+  );
+}
