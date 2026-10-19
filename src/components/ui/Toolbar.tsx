@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { LOCALE_NAMES, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { applyThemeChoice, readThemeChoice, subscribeThemeChoice, type ThemeChoice } from "./theme";
@@ -57,7 +57,8 @@ export function ThemeToggle({ locale }: { locale: Locale }) {
       }}
     >
       <ThemeIcon choice={choice} />
-      <span>{label}</span>
+      {/* Icon only on phones, to leave room for the share button. */}
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }
@@ -81,9 +82,66 @@ export function LanguageSwitch({ locale, href }: { locale: Locale; href: string 
   );
 }
 
+/**
+ * Opens the phone's own share menu (WhatsApp, Messages…) with this page's link.
+ * Where there is none (most desktop browsers), copies the link instead.
+ */
+export function ShareButton({ locale }: { locale: Locale }) {
+  const t = getMessages(locale).share;
+  const [note, setNote] = useState<string | null>(null);
+
+  async function share() {
+    const url = window.location.href.split("#")[0];
+    const title = document.title;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setNote(t.copied);
+    } catch (err) {
+      // Closing the share menu is not an error.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setNote(t.failed);
+    }
+    window.setTimeout(() => setNote(null), 2500);
+  }
+
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        className="btn inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs"
+        onClick={share}
+        data-testid="share"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+          <circle cx="18" cy="5" r="2.5" />
+          <circle cx="6" cy="12" r="2.5" />
+          <circle cx="18" cy="19" r="2.5" />
+          <path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4" />
+        </svg>
+        <span>{t.label}</span>
+      </button>
+      <span
+        role="status"
+        className={
+          note
+            ? "absolute end-0 top-full z-[3] mt-1.5 rounded-md bg-ink px-2 py-1 text-xs whitespace-nowrap text-bg"
+            : "sr-only"
+        }
+      >
+        {note}
+      </span>
+    </span>
+  );
+}
+
 export function Toolbar({ locale, alternateHref }: { locale: Locale; alternateHref: string }) {
   return (
     <div className="flex items-center gap-2">
+      <ShareButton locale={locale} />
       <LanguageSwitch locale={locale} href={alternateHref} />
       <ThemeToggle locale={locale} />
     </div>
