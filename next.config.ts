@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Wikimedia pictures through this site, for networks that block upload.wikimedia.org
+  // (see src/lib/commons/fallback.ts). Only Wikimedia's own file paths are passed on.
+  async rewrites() {
+    return [{ source: "/commons/wikipedia/:path*", destination: "https://upload.wikimedia.org/wikipedia/:path*" }];
+  },
 };
 
 export default nextConfig;
