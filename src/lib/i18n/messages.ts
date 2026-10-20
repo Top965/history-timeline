@@ -104,6 +104,7 @@ export type Messages = {
       honours: string;
       article: string;
       articleHint: string;
+      intro: string;
       loading: string;
       failed: string;
       openWikipedia: string;
@@ -267,6 +268,7 @@ const en: Messages = {
       honours: "Honours",
       article: "From Wikipedia",
       articleHint: "The full article, section by section.",
+      intro: "Introduction",
       loading: "Loading from Wikipedia and Wikidata…",
       failed: "Couldn’t load more details right now.",
       openWikipedia: "Read on Wikipedia",
@@ -459,6 +461,7 @@ const ar: Messages = {
       honours: "الإنجازات",
       article: "من ويكيبيديا",
       articleHint: "المقال كاملًا، قسمًا قسمًا.",
+      intro: "المقدمة",
       loading: "جارٍ التحميل من ويكيبيديا وويكي بيانات…",
       failed: "تعذّر تحميل مزيد من التفاصيل الآن.",
       openWikipedia: "اقرأ في ويكيبيديا",

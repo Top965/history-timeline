@@ -5,6 +5,7 @@ import { formatDate, formatDateRange, formatEventYears, formatRange } from "@/li
 import type { Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { PersonChip } from "@/components/people/PersonChip";
+import { ArticleSections } from "@/components/people/WikiProfile";
 import { SourceList, WikipediaCredit } from "@/components/ui/WikipediaCredit";
 import { CommonsFigure } from "./CommonsFigure";
 import { ShowOnTimeline } from "./ShowOnTimeline";
@@ -96,6 +97,7 @@ function ShortStory({ locale, page, eraLabel }: { locale: Locale; page: EventPag
         <dt className="text-muted">{t.story.era}</dt>
         <dd className="m-0">{page.era?.name}</dd>
       </dl>
+      {event.wikidataId && <ArticleSections wikidataId={event.wikidataId} locale={locale} withLead />}
       <Connections locale={locale} page={page} />
       <h2 className={H3}>{t.story.beforeAndAfter}</h2>
       <div className="flex flex-wrap gap-2">

@@ -313,6 +313,7 @@ function toImage(r: ImageRow, fallbackCaption: string): CommonsImage {
 type EventPageRow = {
   id: string;
   slug: string;
+  wikidata_id: string | null;
   title: string;
   summary: string;
   place: string;
@@ -341,7 +342,7 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
     select e.id, e.slug, coalesce(l.title, d.title) as title, coalesce(l.summary, d.summary) as summary,
       coalesce(l.place_label, d.place_label) as place, coalesce(l.media_hint, d.media_hint) as media_hint,
       case when l.event_id is null then ${SRC} else ${locale} end as text_locale,
-      e.start_year, e.end_year, e.start_date, e.end_date, e.is_approximate, e.importance
+      e.start_year, e.end_year, e.start_date, e.end_date, e.is_approximate, e.importance, e.wikidata_id
     from public.events e
     join public.event_translations d on d.event_id = e.id and d.locale = ${SRC}
     left join public.event_translations l on l.event_id = e.id and l.locale = ${locale}
@@ -417,6 +418,7 @@ async function loadEventPage(tx: Tx, locale: Locale, slug: string): Promise<Even
       importance: asImportance(ev.importance),
       mediaHint: ev.media_hint,
       textLocale: asLocale(ev.text_locale),
+      wikidataId: ev.wikidata_id,
     },
     era: era ?? null,
     hero: hero ? toImage(hero, ev.media_hint ?? ev.title) : null,
