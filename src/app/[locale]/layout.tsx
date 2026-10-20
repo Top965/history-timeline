@@ -8,6 +8,7 @@ import { dirOf, isLocale, LOCALES } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { NavTrail } from "@/components/ui/navTrail";
 import { THEME_SCRIPT } from "@/components/ui/theme";
+import { IMAGE_FALLBACK_SCRIPT } from "@/lib/commons/fallback";
 import "../globals.css";
 
 export async function generateStaticParams() {
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[locale]">)
     <html lang={locale} dir={dirOf(locale)} className={fontVariables} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: IMAGE_FALLBACK_SCRIPT }} />
       </head>
       <body>
         {children}

@@ -313,6 +313,33 @@ test.describe("story pages", () => {
     await expect(readout(page)).toHaveText("2,560 BCE");
   });
 
+  test("shows pictures through the site when Wikimedia is blocked", async ({ page }) => {
+    // A 1×1 PNG stands in for the picture.
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+      "base64",
+    );
+    const proxied: string[] = [];
+    await page.route("https://upload.wikimedia.org/**", (route) => route.abort("blockedbyclient"));
+    await page.route("**/commons/wikipedia/**", (route) => {
+      proxied.push(new URL(route.request().url()).pathname);
+      return route.fulfill({ contentType: "image/png", body: png });
+    });
+    await page.goto("/en/events/great-pyramid-of-giza");
+    // The local seed has no Commons pictures, so add one the way CommonsFigure renders it.
+    await page.evaluate(() => {
+      const i = document.createElement("img");
+      i.alt = "Commons test picture";
+      i.srcset = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Test.jpg/330px-Test.jpg 330w";
+      i.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Test.jpg/960px-Test.jpg";
+      document.body.append(i);
+    });
+    const img = page.getByRole("img", { name: "Commons test picture" });
+    await expect(img).toHaveAttribute("data-via-site", "1");
+    await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+    expect(proxied[0]).toMatch(/^\/commons\/wikipedia\/commons\//);
+  });
+
   test("full story page has no serious accessibility problems", async ({ page }) => {
     await page.goto("/en/events/world-war-i");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
